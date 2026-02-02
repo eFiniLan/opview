@@ -261,21 +261,29 @@ class ModelRendererPainter extends CustomPainter {
   }
 
   /// project a point with left/right offset, append to output lists if in clip region
+  /// matvec3 inlined to avoid allocating List<double> per call (~462 calls/frame)
   void _projectPair(double x, double y, double z,
       double yOff, double zOff, List<Offset> leftOut, List<Offset> rightOut) {
-    final leftPt = matvec3(carSpaceTransform, [x, y - yOff, z + zOff]);
-    final rightPt = matvec3(carSpaceTransform, [x, y + yOff, z + zOff]);
+    final t = carSpaceTransform;
+    final ly = y - yOff, ry = y + yOff, oz = z + zOff;
 
-    if (leftPt[2].abs() < 1e-6 || rightPt[2].abs() < 1e-6) return;
+    // left point: t @ [x, ly, oz]
+    final lw = t[2][0] * x + t[2][1] * ly + t[2][2] * oz;
+    if (lw.abs() < 1e-6) return;
+    final lsx = (t[0][0] * x + t[0][1] * ly + t[0][2] * oz) / lw;
+    final lsy = (t[1][0] * x + t[1][1] * ly + t[1][2] * oz) / lw;
 
-    final lx = leftPt[0] / leftPt[2], ly = leftPt[1] / leftPt[2];
-    final rx = rightPt[0] / rightPt[2], ry = rightPt[1] / rightPt[2];
+    // right point: t @ [x, ry, oz]
+    final rw = t[2][0] * x + t[2][1] * ry + t[2][2] * oz;
+    if (rw.abs() < 1e-6) return;
+    final rsx = (t[0][0] * x + t[0][1] * ry + t[0][2] * oz) / rw;
+    final rsy = (t[1][0] * x + t[1][1] * ry + t[1][2] * oz) / rw;
 
-    if (!_clipRegion.contains(Offset(lx, ly))) return;
-    if (!_clipRegion.contains(Offset(rx, ry))) return;
+    if (!_clipRegion.contains(Offset(lsx, lsy))) return;
+    if (!_clipRegion.contains(Offset(rsx, rsy))) return;
 
-    leftOut.add(Offset(lx, ly));
-    rightOut.add(Offset(rx, ry));
+    leftOut.add(Offset(lsx, lsy));
+    rightOut.add(Offset(rsx, rsy));
   }
 
   // -- lead vehicle geometry (model_renderer.py:234-256) --
