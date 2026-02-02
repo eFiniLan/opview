@@ -14,6 +14,7 @@ class WebRTCClient {
   RTCPeerConnection? _pc;
   RTCDataChannel? _dataChannel;
   final RTCVideoRenderer videoRenderer = RTCVideoRenderer();
+  int _connectGen = 0; // generation counter — stale connects bail out
 
   // data channel messages as a stream
   final _dataController = StreamController<String>.broadcast();
@@ -32,9 +33,12 @@ class WebRTCClient {
   }
 
   /// connect to webrtcd on the given host
+  /// only one connection at a time — newer connect() cancels any in-flight one
   Future<void> connect(String host, {String camera = 'road'}) async {
+    final gen = ++_connectGen;
     await init();
     await _cleanup();
+    if (gen != _connectGen) return; // superseded by newer connect
 
     // create peer connection — no ICE servers needed for LAN
     _pc = await createPeerConnection({'iceServers': []});
@@ -50,9 +54,9 @@ class WebRTCClient {
       }
     };
 
-    // connection state changes
+    // connection state changes — ignore if superseded
     _pc!.onConnectionState = (state) {
-      _stateController.add(state);
+      if (gen == _connectGen) _stateController.add(state);
     };
 
     // add recvonly video transceiver
@@ -63,14 +67,23 @@ class WebRTCClient {
 
     // create offer, prefer H264
     final offer = await _pc!.createOffer();
+    if (gen != _connectGen) return;
     offer.sdp = preferH264(offer.sdp!);
     await _pc!.setLocalDescription(offer);
+    if (gen != _connectGen) return;
 
     // exchange SDP with webrtcd
     final answer = await postStream(host, offer.sdp!, camera: camera);
+    if (gen != _connectGen) return;
     await _pc!.setRemoteDescription(
       RTCSessionDescription(answer['sdp'] as String, answer['type'] as String),
     );
+  }
+
+  /// close current connection without disposing renderer
+  Future<void> close() {
+    _connectGen++; // invalidate any in-flight connect
+    return _cleanup();
   }
 
   /// listen on data channel for cereal messages
@@ -90,14 +103,18 @@ class WebRTCClient {
   }
 
   Future<void> _cleanup() async {
-    _dataChannel?.close();
-    _dataChannel = null;
-    await _pc?.close();
+    // grab + null references first so concurrent calls no-op
+    final pc = _pc;
+    final dc = _dataChannel;
     _pc = null;
+    _dataChannel = null;
     videoRenderer.srcObject = null;
+    dc?.close();
+    await pc?.close();
   }
 
   Future<void> dispose() async {
+    _connectGen++;
     await _cleanup();
     await videoRenderer.dispose();
     await _dataController.close();

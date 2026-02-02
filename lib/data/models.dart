@@ -42,21 +42,12 @@ class StreamRequest {
 /// parsed cereal message from data channel
 class CerealMessage {
   final String type;
-  final int logMonoTime;
-  final bool valid;
   final dynamic data;
 
-  const CerealMessage({
-    required this.type,
-    required this.logMonoTime,
-    required this.valid,
-    required this.data,
-  });
+  const CerealMessage({required this.type, required this.data});
 
   factory CerealMessage.fromJson(Map<String, dynamic> json) => CerealMessage(
     type: json['type'] as String? ?? '',
-    logMonoTime: (json['logMonoTime'] as num?)?.toInt() ?? 0,
-    valid: json['valid'] as bool? ?? true,
     data: json['data'],
   );
 }

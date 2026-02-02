@@ -46,29 +46,15 @@ void main() {
     test('fromJson with all fields', () {
       final msg = CerealMessage.fromJson({
         'type': 'carState',
-        'logMonoTime': 1234567890,
-        'valid': true,
         'data': {'vEgo': 10.0},
       });
       expect(msg.type, 'carState');
-      expect(msg.logMonoTime, 1234567890);
-      expect(msg.valid, true);
       expect((msg.data as Map)['vEgo'], 10.0);
     });
 
     test('fromJson with missing type defaults to empty string', () {
       final msg = CerealMessage.fromJson({'data': {}});
       expect(msg.type, '');
-    });
-
-    test('fromJson with missing logMonoTime defaults to 0', () {
-      final msg = CerealMessage.fromJson({'type': 'test', 'data': {}});
-      expect(msg.logMonoTime, 0);
-    });
-
-    test('fromJson with missing valid defaults to true', () {
-      final msg = CerealMessage.fromJson({'type': 'test', 'data': {}});
-      expect(msg.valid, true);
     });
 
     test('fromJson with null data', () {
@@ -79,14 +65,23 @@ void main() {
     test('fromJson with nested data', () {
       final msg = CerealMessage.fromJson({
         'type': 'modelV2',
-        'logMonoTime': 0,
-        'valid': true,
         'data': {
           'position': {'x': [1.0, 2.0], 'y': [3.0, 4.0], 'z': [5.0, 6.0]},
           'laneLines': [],
         },
       });
       expect((msg.data as Map)['position']['x'], [1.0, 2.0]);
+    });
+
+    test('fromJson ignores extra fields', () {
+      final msg = CerealMessage.fromJson({
+        'type': 'carState',
+        'logMonoTime': 1234567890,
+        'valid': true,
+        'data': {'vEgo': 5.0},
+      });
+      expect(msg.type, 'carState');
+      expect((msg.data as Map)['vEgo'], 5.0);
     });
   });
 

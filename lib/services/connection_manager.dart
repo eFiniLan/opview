@@ -49,6 +49,7 @@ class ConnectionManager {
   bool _connecting = false;
   bool _paused = false;
   bool _reconnecting = false;  // guard against re-entrant _scheduleReconnect
+  int _connectEpoch = 0;       // invalidate stale in-flight connects
   int _retryCount = 0;
   static const _maxRetries = 3;
   String _streamType = 'road';
@@ -80,6 +81,7 @@ class ConnectionManager {
     if (_connecting || _host == null || _paused) return;
     _connecting = true;
     _reconnecting = false;
+    final epoch = ++_connectEpoch;
 
     // cancel stale listeners before attempting new connection
     _stateSub?.cancel();
@@ -88,6 +90,7 @@ class ConnectionManager {
     try {
       debugPrint('[scope] connecting to $_host (camera: $_streamType)');
       await _client.connect(_host!, camera: _streamType);
+      if (epoch != _connectEpoch) return; // superseded by newer connect
       _retryDelay = _retryInitialDelay;
       _retryCount = 0;
       _lastDataTime = DateTime.now();
@@ -101,10 +104,11 @@ class ConnectionManager {
       _setConnected(true);
       debugPrint('[scope] connected');
     } catch (e) {
+      if (epoch != _connectEpoch) return; // superseded, don't reconnect
       debugPrint('[scope] connection failed: $e');
       _scheduleReconnect();
     } finally {
-      _connecting = false;
+      if (epoch == _connectEpoch) _connecting = false;
     }
   }
 
@@ -204,6 +208,7 @@ class ConnectionManager {
 
   /// cancel all timers and subscriptions (but keep _host and _deviceSub)
   void _teardown() {
+    _connectEpoch++;  // invalidate any in-flight _client.connect()
     _watchdog?.cancel();
     _retryTimer?.cancel();
     _dataSub?.cancel();
@@ -212,6 +217,7 @@ class ConnectionManager {
     _parser.reset();
     _connecting = false;
     _reconnecting = false;
+    _client.close();  // close current PC immediately
   }
 
   /// exponential backoff reconnect, fall back to re-discovery after max retries

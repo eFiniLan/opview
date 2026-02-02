@@ -45,6 +45,25 @@ for folder, size in android_sizes.items():
     canvas.paste(icon, (offset, offset), icon)
     canvas.save(os.path.join(path, "ic_launcher_foreground.png"))
 
+# adaptive icon XML (Android 8.0+)
+anydpi_path = os.path.join(ROOT, "android", "app", "src", "main", "res", "mipmap-anydpi-v26")
+os.makedirs(anydpi_path, exist_ok=True)
+with open(os.path.join(anydpi_path, "ic_launcher.xml"), "w") as f:
+    f.write('<?xml version="1.0" encoding="utf-8"?>\n')
+    f.write('<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n')
+    f.write('    <background android:drawable="@color/ic_launcher_background"/>\n')
+    f.write('    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>\n')
+    f.write('</adaptive-icon>\n')
+
+# background color resource
+values_path = os.path.join(ROOT, "android", "app", "src", "main", "res", "values")
+os.makedirs(values_path, exist_ok=True)
+with open(os.path.join(values_path, "colors.xml"), "w") as f:
+    f.write('<?xml version="1.0" encoding="utf-8"?>\n')
+    f.write('<resources>\n')
+    f.write('    <color name="ic_launcher_background">#000000</color>\n')
+    f.write('</resources>\n')
+
 print("Android icons generated")
 
 # iOS icons

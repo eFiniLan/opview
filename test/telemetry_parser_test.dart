@@ -11,12 +11,10 @@ void main() {
 
   group('single message', () {
     test('complete JSON produces one message', () {
-      final json = jsonEncode({'type': 'carState', 'logMonoTime': 123, 'valid': true, 'data': {'vEgo': 10.0}});
+      final json = jsonEncode({'type': 'carState', 'data': {'vEgo': 10.0}});
       final msgs = parser.parse(json);
       expect(msgs.length, 1);
       expect(msgs[0].type, 'carState');
-      expect(msgs[0].logMonoTime, 123);
-      expect(msgs[0].valid, true);
       expect((msgs[0].data as Map)['vEgo'], 10.0);
     });
 
@@ -27,8 +25,8 @@ void main() {
 
   group('}{ splitting', () {
     test('two concatenated JSON objects produce two messages', () {
-      final a = jsonEncode({'type': 'carState', 'logMonoTime': 1, 'valid': true, 'data': {}});
-      final b = jsonEncode({'type': 'modelV2', 'logMonoTime': 2, 'valid': true, 'data': {}});
+      final a = jsonEncode({'type': 'carState', 'data': {}});
+      final b = jsonEncode({'type': 'modelV2', 'data': {}});
       final msgs = parser.parse('$a$b');
       expect(msgs.length, 2);
       expect(msgs[0].type, 'carState');
@@ -36,9 +34,9 @@ void main() {
     });
 
     test('three concatenated objects produce three messages', () {
-      final a = jsonEncode({'type': 'a', 'logMonoTime': 0, 'valid': true, 'data': {}});
-      final b = jsonEncode({'type': 'b', 'logMonoTime': 0, 'valid': true, 'data': {}});
-      final c = jsonEncode({'type': 'c', 'logMonoTime': 0, 'valid': true, 'data': {}});
+      final a = jsonEncode({'type': 'a', 'data': {}});
+      final b = jsonEncode({'type': 'b', 'data': {}});
+      final c = jsonEncode({'type': 'c', 'data': {}});
       final msgs = parser.parse('$a$b$c');
       expect(msgs.length, 3);
       expect(msgs[0].type, 'a');
@@ -49,14 +47,14 @@ void main() {
 
   group('NaN sanitization', () {
     test('NaN in value is replaced with null', () {
-      final raw = '{"type":"carState","logMonoTime":0,"valid":true,"data":{"vEgo":NaN}}';
+      final raw = '{"type":"carState","data":{"vEgo":NaN}}';
       final msgs = parser.parse(raw);
       expect(msgs.length, 1);
       expect((msgs[0].data as Map)['vEgo'], isNull);
     });
 
     test('multiple NaN values are all replaced', () {
-      final raw = '{"type":"t","logMonoTime":0,"valid":true,"data":{"a":NaN,"b":NaN,"c":1.5}}';
+      final raw = '{"type":"t","data":{"a":NaN,"b":NaN,"c":1.5}}';
       final msgs = parser.parse(raw);
       expect(msgs.length, 1);
       final data = msgs[0].data as Map;
@@ -66,14 +64,14 @@ void main() {
     });
 
     test('NaN as substring is not replaced (word boundary)', () {
-      final raw = '{"type":"t","logMonoTime":0,"valid":true,"data":{"name":"NaNothing"}}';
+      final raw = '{"type":"t","data":{"name":"NaNothing"}}';
       final msgs = parser.parse(raw);
       expect(msgs.length, 1);
       expect((msgs[0].data as Map)['name'], 'NaNothing');
     });
 
     test('NaN in array is replaced', () {
-      final raw = '{"type":"t","logMonoTime":0,"valid":true,"data":{"arr":[1.0,NaN,3.0]}}';
+      final raw = '{"type":"t","data":{"arr":[1.0,NaN,3.0]}}';
       final msgs = parser.parse(raw);
       expect(msgs.length, 1);
       final arr = (msgs[0].data as Map)['arr'] as List;
@@ -85,7 +83,7 @@ void main() {
 
   group('buffering', () {
     test('partial message buffered until complete', () {
-      final full = jsonEncode({'type': 'carState', 'logMonoTime': 0, 'valid': true, 'data': {}});
+      final full = jsonEncode({'type': 'carState', 'data': {}});
       final half1 = full.substring(0, full.length ~/ 2);
       final half2 = full.substring(full.length ~/ 2);
 
@@ -96,8 +94,8 @@ void main() {
     });
 
     test('partial first + complete second splits correctly', () {
-      final a = jsonEncode({'type': 'first', 'logMonoTime': 0, 'valid': true, 'data': {}});
-      final b = jsonEncode({'type': 'second', 'logMonoTime': 0, 'valid': true, 'data': {}});
+      final a = jsonEncode({'type': 'first', 'data': {}});
+      final b = jsonEncode({'type': 'second', 'data': {}});
 
       // send first part of a
       final halfA = a.substring(0, a.length ~/ 2);
@@ -119,7 +117,7 @@ void main() {
     });
 
     test('valid message after malformed one is still parsed', () {
-      final good = jsonEncode({'type': 'ok', 'logMonoTime': 0, 'valid': true, 'data': {}});
+      final good = jsonEncode({'type': 'ok', 'data': {}});
       // send bad JSON followed by good
       final msgs = parser.parse('{bad}$good');
       // the bad part gets consumed by }{ split, the good part gets parsed
@@ -129,7 +127,7 @@ void main() {
 
   group('reset', () {
     test('reset clears buffer', () {
-      final full = jsonEncode({'type': 'test', 'logMonoTime': 0, 'valid': true, 'data': {}});
+      final full = jsonEncode({'type': 'test', 'data': {}});
       final half = full.substring(0, full.length ~/ 2);
 
       parser.parse(half);
@@ -143,13 +141,11 @@ void main() {
   });
 
   group('CerealMessage defaults', () {
-    test('missing fields get defaults', () {
+    test('missing type defaults to empty string', () {
       final raw = '{"data":{"x":1}}';
       final msgs = parser.parse(raw);
       expect(msgs.length, 1);
       expect(msgs[0].type, '');
-      expect(msgs[0].logMonoTime, 0);
-      expect(msgs[0].valid, true);
     });
   });
 }
