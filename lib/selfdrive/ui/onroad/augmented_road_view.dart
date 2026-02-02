@@ -134,15 +134,18 @@ class _AugmentedRoadViewState extends State<AugmentedRoadView>
             ),
 
             // layer 1b: HUD + alerts — always visible
+            // RepaintBoundary isolates widget rebuilds from the video/model layer
             Padding(
               padding: EdgeInsets.all(borderSize),
-              child: ClipRect(
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    HudRenderer(uiState: widget.uiState, scale: scale),
-                    AlertRenderer(uiState: widget.uiState, scale: scale),
-                  ],
+              child: RepaintBoundary(
+                child: ClipRect(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      HudRenderer(uiState: widget.uiState, scale: scale),
+                      AlertRenderer(uiState: widget.uiState, scale: scale),
+                    ],
+                  ),
                 ),
               ),
             ),
