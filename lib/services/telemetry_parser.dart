@@ -39,7 +39,7 @@ class TelemetryParser {
   /// sanitize NaN, parse JSON, build CerealMessage
   void _tryParse(String raw, List<CerealMessage> out) {
     try {
-      final sanitized = raw.replaceAll(_nanRegex, 'null');
+      final sanitized = raw.contains('NaN') ? raw.replaceAll(_nanRegex, 'null') : raw;
       final json = jsonDecode(sanitized) as Map<String, dynamic>;
       out.add(CerealMessage.fromJson(json));
     } catch (_) {
