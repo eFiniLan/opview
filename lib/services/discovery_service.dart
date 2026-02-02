@@ -16,6 +16,7 @@ final _bracketRegex = RegExp(r'\[(.*?)\]');
 
 class DiscoveryService {
   BonsoirDiscovery? _discovery;
+  StreamSubscription? _eventSub;
   final _devicesController = StreamController<DiscoveredDevice>.broadcast();
   Stream<DiscoveredDevice> get devices => _devicesController.stream;
 
@@ -25,7 +26,7 @@ class DiscoveryService {
       _discovery = BonsoirDiscovery(type: _serviceType);
       await _discovery!.ready;
 
-      _discovery!.eventStream?.listen((event) {
+      _eventSub = _discovery!.eventStream?.listen((event) {
         if (event.type == BonsoirDiscoveryEventType.discoveryServiceFound) {
           // service found but not yet resolved — need to resolve for IP/port
           final service = event.service;
@@ -61,6 +62,8 @@ class DiscoveryService {
   }
 
   Future<void> stop() async {
+    _eventSub?.cancel();
+    _eventSub = null;
     try {
       await _discovery?.stop();
     } catch (e) {
