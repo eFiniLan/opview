@@ -232,6 +232,7 @@ class ConnectionManager {
     _stateSub?.cancel();
     _stateSub = null;
     _parser.reset();
+    _client.close();  // free server-side session
     _setConnected(false);
 
     _retryCount++;
