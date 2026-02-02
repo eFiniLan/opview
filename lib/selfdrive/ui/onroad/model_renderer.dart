@@ -35,15 +35,6 @@ const _leadChevronBase = Color.fromARGB(255, 201, 34, 49);
 
 // -- data classes --
 
-class ModelPoints {
-  /// raw 3D points: list of [x, y, z]
-  List<List<double>> rawPoints;
-  /// projected 2D polygon: list of Offset
-  List<Offset> projectedPoints;
-
-  ModelPoints() : rawPoints = [], projectedPoints = [];
-}
-
 class LeadVehicle {
   List<Offset> glow;
   List<Offset> chevron;
@@ -79,91 +70,81 @@ class ModelRendererPainter extends CustomPainter {
     _clipRegion = contentRect.inflate(clipMargin);
     _pathOffsetZ = state.calibHeight.isNotEmpty ? state.calibHeight[0] : heightInit;
 
-    // build raw points from state
-    final path = _buildModelPoints(state.pathX, state.pathY, state.pathZ);
-    final laneLines = List.generate(4, (i) =>
-      _buildModelPoints(state.laneLineX[i], state.laneLineY[i], state.laneLineZ[i]));
-    final roadEdges = List.generate(2, (i) =>
-      _buildModelPoints(state.roadEdgeX[i], state.roadEdgeY[i], state.roadEdgeZ[i]));
-
-    if (path.rawPoints.isEmpty) return;
-
     // max draw distance from path end
-    final pathXArray = path.rawPoints.map((p) => p[0]).toList();
-    var maxDist = pathXArray.last.clamp(minDrawDistance, maxDrawDistance);
-    final maxIdx = _getPathLengthIdx(laneLines[0].rawPoints.map((p) => p[0]).toList(), maxDist);
+    final pathX = state.pathX;
+    var maxDist = pathX.last.clamp(minDrawDistance, maxDrawDistance);
+    final maxIdx = _getPathLengthIdx(state.laneLineX[0], maxDist);
 
     // project lane lines
-    for (int i = 0; i < 4; i++) {
-      laneLines[i].projectedPoints = _mapLineToPolygon(
-        laneLines[i].rawPoints, 0.025 * state.laneLineProbs[i].clamp(0.0, 1.0), 0.0, maxIdx, maxDist,
-      );
-    }
+    final laneLinePolys = List.generate(4, (i) => _mapLineToPolygon(
+      state.laneLineX[i], state.laneLineY[i], state.laneLineZ[i],
+      0.025 * state.laneLineProbs[i].clamp(0.0, 1.0), 0.0, maxIdx, maxDist,
+    ));
 
     // project road edges
-    for (int i = 0; i < 2; i++) {
-      roadEdges[i].projectedPoints = _mapLineToPolygon(
-        roadEdges[i].rawPoints, 0.025, 0.0, maxIdx, maxDist,
-      );
-    }
+    final roadEdgePolys = List.generate(2, (i) => _mapLineToPolygon(
+      state.roadEdgeX[i], state.roadEdgeY[i], state.roadEdgeZ[i],
+      0.025, 0.0, maxIdx, maxDist,
+    ));
 
     // project path (shorten for lead vehicle)
     if (state.leadOne != null && state.leadOne!['status'] == true) {
       final leadD = (state.leadOne!['dRel'] as num).toDouble() * 2.0;
       maxDist = (leadD - min(leadD * 0.35, 10.0)).clamp(0.0, maxDist);
     }
-    final pathMaxIdx = _getPathLengthIdx(pathXArray, maxDist);
-    path.projectedPoints = _mapLineToPolygon(
-      path.rawPoints, 0.9, _pathOffsetZ, pathMaxIdx, maxDist, allowInvert: false,
+    final pathMaxIdx = _getPathLengthIdx(pathX, maxDist);
+    final pathPoly = _mapLineToPolygon(
+      pathX, state.pathY, state.pathZ,
+      0.9, _pathOffsetZ, pathMaxIdx, maxDist, allowInvert: false,
     );
 
     // draw everything
-    _drawLaneLines(canvas, laneLines);
-    _drawRoadEdges(canvas, roadEdges);
-    _drawPath(canvas, path);
-    _drawLeadIndicators(canvas, pathXArray, path);
+    _drawLaneLines(canvas, laneLinePolys);
+    _drawRoadEdges(canvas, roadEdgePolys);
+    _drawPath(canvas, pathPoly);
+    _drawLeadIndicators(canvas, pathX);
   }
 
   // -- drawing --
 
   /// draw lane lines: white, alpha from probability
-  void _drawLaneLines(Canvas canvas, List<ModelPoints> laneLines) {
+  void _drawLaneLines(Canvas canvas, List<List<Offset>> laneLines) {
     for (int i = 0; i < 4; i++) {
-      if (laneLines[i].projectedPoints.isEmpty) continue;
+      if (laneLines[i].isEmpty) continue;
       final alpha = (state.laneLineProbs[i].clamp(0.0, 0.7) * 255).round();
-      _drawPolygon(canvas, laneLines[i].projectedPoints, Color.fromARGB(alpha, 255, 255, 255));
+      _drawPolygon(canvas, laneLines[i], Color.fromARGB(alpha, 255, 255, 255));
     }
   }
 
   /// draw road edges: red, alpha from 1-std
-  void _drawRoadEdges(Canvas canvas, List<ModelPoints> roadEdges) {
+  void _drawRoadEdges(Canvas canvas, List<List<Offset>> roadEdges) {
     for (int i = 0; i < 2; i++) {
-      if (roadEdges[i].projectedPoints.isEmpty) continue;
+      if (roadEdges[i].isEmpty) continue;
       final alpha = ((1.0 - state.roadEdgeStds[i]).clamp(0.0, 1.0) * 255).round();
-      _drawPolygon(canvas, roadEdges[i].projectedPoints, Color.fromARGB(alpha, 255, 0, 0));
+      _drawPolygon(canvas, roadEdges[i], Color.fromARGB(alpha, 255, 0, 0));
     }
   }
 
   /// draw path: gradient from bottom to top
-  void _drawPath(Canvas canvas, ModelPoints path) {
-    if (path.projectedPoints.isEmpty) return;
+  void _drawPath(Canvas canvas, List<Offset> pathPoly) {
+    if (pathPoly.isEmpty) return;
 
     if (state.experimentalMode) {
-      _drawExperimentalPath(canvas, path);
+      _drawExperimentalPath(canvas, pathPoly);
       return;
     }
 
     final colors = state.allowThrottle ? throttleColors : noThrottleColors;
-    _drawGradientPolygon(canvas, path.projectedPoints, colors, [0.0, 0.5, 1.0]);
+    _drawGradientPolygon(canvas, pathPoly, colors, [0.0, 0.5, 1.0]);
   }
 
   /// experimental mode: HSL acceleration gradient
-  void _drawExperimentalPath(Canvas canvas, ModelPoints path) {
-    if (path.projectedPoints.length < 2) return;
+  void _drawExperimentalPath(Canvas canvas, List<Offset> pathPoly) {
+    if (pathPoly.length < 2) return;
 
-    final maxLen = min(path.projectedPoints.length ~/ 2, state.accelerationX.length);
+    final maxLen = min(pathPoly.length ~/ 2, state.accelerationX.length);
     if (maxLen < 2) {
-      _drawPolygon(canvas, path.projectedPoints, const Color.fromARGB(30, 255, 255, 255));
+      _drawPolygon(canvas, pathPoly, const Color.fromARGB(30, 255, 255, 255));
       return;
     }
 
@@ -171,7 +152,7 @@ class ModelRendererPainter extends CustomPainter {
     final stops = <double>[];
 
     for (int i = 0; i < maxLen; i++) {
-      final trackY = path.projectedPoints[i].dy;
+      final trackY = pathPoly[i].dy;
       if (trackY < contentRect.top || trackY > contentRect.bottom) continue;
 
       final linGradPoint = 1.0 - (trackY - contentRect.top) / contentRect.height;
@@ -185,14 +166,14 @@ class ModelRendererPainter extends CustomPainter {
     }
 
     if (colors.length > 1) {
-      _drawGradientPolygon(canvas, path.projectedPoints, colors, stops);
+      _drawGradientPolygon(canvas, pathPoly, colors, stops);
     } else {
-      _drawPolygon(canvas, path.projectedPoints, const Color.fromARGB(30, 255, 255, 255));
+      _drawPolygon(canvas, pathPoly, const Color.fromARGB(30, 255, 255, 255));
     }
   }
 
   /// draw lead vehicle indicators
-  void _drawLeadIndicators(Canvas canvas, List<double> pathXArray, ModelPoints path) {
+  void _drawLeadIndicators(Canvas canvas, List<double> pathX) {
     final leads = [state.leadOne, state.leadTwo];
     for (final lead in leads) {
       if (lead == null || lead['status'] != true) continue;
@@ -200,9 +181,9 @@ class ModelRendererPainter extends CustomPainter {
       final dRel = (lead['dRel'] as num).toDouble();
       final vRel = (lead['vRel'] as num).toDouble();
       final yRel = (lead['yRel'] as num).toDouble();
-      final idx = _getPathLengthIdx(pathXArray, dRel);
+      final idx = _getPathLengthIdx(pathX, dRel);
 
-      final z = (idx < path.rawPoints.length) ? path.rawPoints[idx][2] : 0.0;
+      final z = (idx < state.pathZ.length) ? state.pathZ[idx] : 0.0;
       final point = _mapToScreen(dRel, -yRel, z + _pathOffsetZ);
       if (point == null) continue;
 
@@ -225,62 +206,37 @@ class ModelRendererPainter extends CustomPainter {
     return Offset(sx, sy);
   }
 
-  /// convert 3D line to 2D polygon (left side + right side reversed)
-  /// this is the core projection: offset left/right, project, clip, concatenate
+  /// convert 3D line (xyz lists) to 2D polygon (left side + right side reversed)
+  /// core projection: offset left/right, project, clip, concatenate
   List<Offset> _mapLineToPolygon(
-    List<List<double>> line,
-    double yOff,
-    double zOff,
-    int maxIdx,
-    double maxDistance, {
+    List<double> xList, List<double> yList, List<double> zList,
+    double yOff, double zOff, int maxIdx, double maxDistance, {
     bool allowInvert = true,
   }) {
-    if (line.isEmpty) return [];
+    final n = min(xList.length, min(yList.length, zList.length));
+    if (n == 0) return [];
 
-    // slice to maxIdx, interpolate endpoint for smooth ending
-    final points = <List<double>>[];
-    final end = min(maxIdx + 1, line.length);
-    for (int i = 0; i < end; i++) {
-      points.add(line[i]);
-    }
-
-    // interpolate around maxIdx
-    if (maxIdx > 0 && maxIdx < line.length - 1) {
-      final p0 = line[maxIdx], p1 = line[maxIdx + 1];
-      final x0 = p0[0], x1 = p1[0];
-      if (x1 != x0) {
-        final t = (maxDistance - x0) / (x1 - x0);
-        points.add([
-          maxDistance,
-          p0[1] + t * (p1[1] - p0[1]),
-          p0[2] + t * (p1[2] - p0[2]),
-        ]);
-      }
-    }
-
-    // filter non-negative x
-    final filtered = points.where((p) => p[0] >= 0).toList();
-    if (filtered.isEmpty) return [];
-
-    // project left and right offset points
     final leftScreen = <Offset>[];
     final rightScreen = <Offset>[];
 
-    for (final p in filtered) {
-      final leftPt = matvec3(carSpaceTransform, [p[0], p[1] - yOff, p[2] + zOff]);
-      final rightPt = matvec3(carSpaceTransform, [p[0], p[1] + yOff, p[2] + zOff]);
+    final end = min(maxIdx + 1, n);
+    for (int i = 0; i < end; i++) {
+      if (xList[i] < 0) continue;
+      _projectPair(xList[i], yList[i], zList[i], yOff, zOff, leftScreen, rightScreen);
+    }
 
-      if (leftPt[2].abs() < 1e-6 || rightPt[2].abs() < 1e-6) continue;
-
-      final lx = leftPt[0] / leftPt[2], ly = leftPt[1] / leftPt[2];
-      final rx = rightPt[0] / rightPt[2], ry = rightPt[1] / rightPt[2];
-
-      // clip check
-      if (!_clipRegion.contains(Offset(lx, ly))) continue;
-      if (!_clipRegion.contains(Offset(rx, ry))) continue;
-
-      leftScreen.add(Offset(lx, ly));
-      rightScreen.add(Offset(rx, ry));
+    // interpolate endpoint for smooth ending
+    if (maxIdx > 0 && maxIdx < n - 1) {
+      final x0 = xList[maxIdx], x1 = xList[maxIdx + 1];
+      if (x1 != x0) {
+        final t = (maxDistance - x0) / (x1 - x0);
+        _projectPair(
+          maxDistance,
+          yList[maxIdx] + t * (yList[maxIdx + 1] - yList[maxIdx]),
+          zList[maxIdx] + t * (zList[maxIdx + 1] - zList[maxIdx]),
+          yOff, zOff, leftScreen, rightScreen,
+        );
+      }
     }
 
     if (leftScreen.isEmpty) return [];
@@ -302,6 +258,24 @@ class ModelRendererPainter extends CustomPainter {
     }
 
     return [...leftScreen, ...rightScreen.reversed];
+  }
+
+  /// project a point with left/right offset, append to output lists if in clip region
+  void _projectPair(double x, double y, double z,
+      double yOff, double zOff, List<Offset> leftOut, List<Offset> rightOut) {
+    final leftPt = matvec3(carSpaceTransform, [x, y - yOff, z + zOff]);
+    final rightPt = matvec3(carSpaceTransform, [x, y + yOff, z + zOff]);
+
+    if (leftPt[2].abs() < 1e-6 || rightPt[2].abs() < 1e-6) return;
+
+    final lx = leftPt[0] / leftPt[2], ly = leftPt[1] / leftPt[2];
+    final rx = rightPt[0] / rightPt[2], ry = rightPt[1] / rightPt[2];
+
+    if (!_clipRegion.contains(Offset(lx, ly))) return;
+    if (!_clipRegion.contains(Offset(rx, ry))) return;
+
+    leftOut.add(Offset(lx, ly));
+    rightOut.add(Offset(rx, ry));
   }
 
   // -- lead vehicle geometry (model_renderer.py:234-256) --
@@ -395,14 +369,6 @@ class ModelRendererPainter extends CustomPainter {
       if (posX[i] <= distance) idx = i;
     }
     return idx;
-  }
-
-  /// build ModelPoints from xyz lists
-  ModelPoints _buildModelPoints(List<double> x, List<double> y, List<double> z) {
-    final mp = ModelPoints();
-    final n = min(x.length, min(y.length, z.length));
-    mp.rawPoints = List.generate(n, (i) => [x[i], y[i], z[i]]);
-    return mp;
   }
 
   /// check if transform is all zeros (not yet calibrated)
