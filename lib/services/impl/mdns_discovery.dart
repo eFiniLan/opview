@@ -1,26 +1,25 @@
-// mDNS discovery — find comma devices on the network
-// ported from dashy mobile NsdDiscoveryManager.kt
-//
-// looks for _ssh._tcp services starting with "comma SSH".
-// extracts display name from bracket notation: "comma SSH [MyDevice]" → "MyDevice"
+// mDNS discovery implementation
+// Finds comma devices via _ssh._tcp service
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:bonsoir/bonsoir.dart';
-import 'package:scope/data/models.dart';
+import 'package:scope/services/discovery.dart';
 
-// bonsoir expects NO trailing dot (normalizer splits on '.' and expects exactly 2 parts)
+// bonsoir expects NO trailing dot
 const _serviceType = '_ssh._tcp';
 const _servicePrefix = 'comma SSH';
 final _bracketRegex = RegExp(r'\[(.*?)\]');
 
-class DiscoveryService {
+class MdnsDiscovery implements Discovery {
   BonsoirDiscovery? _discovery;
   StreamSubscription? _eventSub;
   final _devicesController = StreamController<DiscoveredDevice>.broadcast();
+
+  @override
   Stream<DiscoveredDevice> get devices => _devicesController.stream;
 
-  /// start discovering comma devices
+  @override
   Future<void> start() async {
     try {
       _discovery = BonsoirDiscovery(type: _serviceType);
@@ -28,14 +27,12 @@ class DiscoveryService {
 
       _eventSub = _discovery!.eventStream?.listen((event) {
         if (event.type == BonsoirDiscoveryEventType.discoveryServiceFound) {
-          // service found but not yet resolved — need to resolve for IP/port
           final service = event.service;
           if (service == null) return;
           if (!service.name.startsWith(_servicePrefix)) return;
           debugPrint('[scope] found service: ${service.name}, resolving...');
           service.resolve(_discovery!.serviceResolver);
         } else if (event.type == BonsoirDiscoveryEventType.discoveryServiceResolved) {
-          // service resolved — now we have host + port
           final service = event.service;
           if (service == null) return;
           if (!service.name.startsWith(_servicePrefix)) return;
@@ -48,7 +45,7 @@ class DiscoveryService {
           final device = DiscoveredDevice(
             displayName: _extractDisplayName(service.name, host),
             host: host,
-            port: resolved.port,
+            deviceId: _extractDeviceId(service.name),
           );
           _devicesController.add(device);
         }
@@ -61,6 +58,7 @@ class DiscoveryService {
     }
   }
 
+  @override
   Future<void> stop() async {
     _eventSub?.cancel();
     _eventSub = null;
@@ -72,15 +70,21 @@ class DiscoveryService {
     _discovery = null;
   }
 
+  @override
   void dispose() {
     stop();
     _devicesController.close();
   }
 }
 
-/// extract name from brackets, or use fallback
-/// "comma SSH [MyDevice]" → "MyDevice"
+/// Extract name from brackets: "comma SSH - tici - [comma-xxx]" → "comma-xxx"
 String _extractDisplayName(String serviceName, String fallback) {
   final match = _bracketRegex.firstMatch(serviceName);
   return match?.group(1) ?? fallback;
+}
+
+/// Extract device ID from service name
+String? _extractDeviceId(String serviceName) {
+  final match = _bracketRegex.firstMatch(serviceName);
+  return match?.group(1);
 }
