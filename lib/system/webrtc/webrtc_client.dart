@@ -47,6 +47,12 @@ class WebRTCClient {
     _dataChannel = await _pc!.createDataChannel('data', RTCDataChannelInit());
     _setupDataChannel(_dataChannel!);
 
+    // also handle server-created data channel (fallback)
+    _pc!.onDataChannel = (channel) {
+      _dataChannel = channel;
+      _setupDataChannel(channel);
+    };
+
     // video: recvonly
     _pc!.onTrack = (event) {
       if (event.track.kind == 'video' && event.streams.isNotEmpty) {
@@ -95,10 +101,6 @@ class WebRTCClient {
           _dataController.add(text);
         }
       } catch (_) {}
-    };
-    // also handle server-created data channel
-    _pc?.onDataChannel = (channel) {
-      _setupDataChannel(channel);
     };
   }
 

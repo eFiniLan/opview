@@ -2,9 +2,8 @@
 // ported from openpilot selfdrive/ui/ui_state.py
 //
 // one ChangeNotifier, fed by telemetry parser.
-// 20Hz throttle: notifyListeners at most every 50ms.
+// data-driven refresh: notifyListeners on modelV2 arrival.
 
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 // -- constants --
@@ -87,29 +86,19 @@ class UIState extends ChangeNotifier {
   // connection state — drives "Connecting..." overlay + screen wake lock
   bool isConnected = false;
 
-  // -- 20Hz throttle --
-  Timer? _throttleTimer;
-  bool _dirty = false;
-
   /// monotonic version counter — incremented on each notify.
   /// used by painters to detect state changes in shouldRepaint.
   int version = 0;
 
-  /// start the 20Hz notify loop
-  void startThrottle() {
-    _throttleTimer?.cancel();
-    _throttleTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
-      if (_dirty) {
-        _dirty = false;
-        version++;
-        notifyListeners();
-      }
-    });
+  /// notify listeners and bump version
+  void _notify() {
+    version++;
+    notifyListeners();
   }
 
-  /// mark state as changed — will notify on next 50ms tick
-  void markDirty() {
-    _dirty = true;
+  /// force immediate notify (for connection state changes)
+  void notifyNow() {
+    _notify();
   }
 
   // -- apply methods: one per cereal service --
@@ -119,7 +108,7 @@ class UIState extends ChangeNotifier {
     vEgoCluster = (data['vEgoCluster'] as num?)?.toDouble() ?? 0.0;
     vCruiseCluster = (data['vCruiseCluster'] as num?)?.toDouble() ?? 0.0;
     if (!vEgoClusterSeen && vEgoCluster != 0.0) vEgoClusterSeen = true;
-    markDirty();
+    // no notify — picked up on next modelV2
   }
 
   void applySelfdriveState(Map<String, dynamic> data) {
@@ -138,12 +127,12 @@ class UIState extends ChangeNotifier {
     } else {
       status = enabled ? UIStatus.engaged : UIStatus.disengaged;
     }
-    markDirty();
+    // no notify — picked up on next modelV2
   }
 
   void applyControlsState(Map<String, dynamic> data) {
     vCruiseDEPRECATED = (data['vCruiseDEPRECATED'] as num?)?.toDouble() ?? 0.0;
-    markDirty();
+    // no notify — picked up on next modelV2
   }
 
   void applyModelV2(Map<String, dynamic> data) {
@@ -167,7 +156,7 @@ class UIState extends ChangeNotifier {
     }
     roadEdgeStds = _toDoublesFixed(_toDoubles(data['roadEdgeStds']), 2);
     accelerationX = _toDoubles(data['acceleration']?['x']);
-    markDirty();
+    _notify();  // data-driven: render on modelV2 arrival
   }
 
   void applyLiveCalibration(Map<String, dynamic> data) {
@@ -175,29 +164,29 @@ class UIState extends ChangeNotifier {
     wideFromDeviceEuler = _toDoubles(data['wideFromDeviceEuler']);
     calStatus = data['calStatus'] as String? ?? '';
     calibHeight = _toDoubles(data['height']);
-    markDirty();
+    // no notify — picked up on next modelV2
   }
 
   void applyRadarState(Map<String, dynamic> data) {
     leadOne = data['leadOne'] as Map<String, dynamic>?;
     leadTwo = data['leadTwo'] as Map<String, dynamic>?;
-    markDirty();
+    // no notify — picked up on next modelV2
   }
 
   void applyLongitudinalPlan(Map<String, dynamic> data) {
     allowThrottle = data['allowThrottle'] as bool? ?? true;
-    markDirty();
+    // no notify — picked up on next modelV2
   }
 
   void applyDeviceState(Map<String, dynamic> data) {
     deviceType = data['deviceType'] as String? ?? '';
     started = data['started'] as bool? ?? started;
-    markDirty();
+    // no notify — picked up on next modelV2
   }
 
   void applyRoadCameraState(Map<String, dynamic> data) {
     sensor = data['sensor'] as String? ?? '';
-    markDirty();
+    // no notify — picked up on next modelV2
   }
 
   // -- derived values --
@@ -268,7 +257,6 @@ class UIState extends ChangeNotifier {
 
   @override
   void dispose() {
-    _throttleTimer?.cancel();
     super.dispose();
   }
 }

@@ -400,16 +400,21 @@ void main() {
     });
   });
 
-  // -- version / dirty --
+  // -- version --
 
   group('version tracking', () {
     test('version starts at 0', () {
       expect(state.version, 0);
     });
 
-    test('markDirty does not increment version immediately', () {
-      state.markDirty();
-      expect(state.version, 0);
+    test('notifyNow increments version', () {
+      state.notifyNow();
+      expect(state.version, 1);
+    });
+
+    test('applyModelV2 increments version', () {
+      state.applyModelV2({'position': {'x': [], 'y': [], 'z': []}});
+      expect(state.version, 1);
     });
   });
 
