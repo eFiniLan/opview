@@ -48,16 +48,11 @@ class AlertRenderer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (uiState.alertSize == _sizeNone) return const SizedBox.shrink();
-    return LayoutBuilder(builder: (context, constraints) {
-      return _buildAlert(constraints.maxWidth, constraints.maxHeight);
-    });
-  }
 
-  Widget _buildAlert(double parentW, double parentH) {
     final bgColor = _alertColors[uiState.alertStatus] ?? _alertColors[_statusNormal]!;
     final size = uiState.alertSize;
 
-    if (size == _sizeFull) return _fullAlert(parentW, parentH, bgColor);
+    if (size == _sizeFull) return _fullAlert(bgColor);
 
     // small or mid: positioned at bottom
     final h = (size == _sizeSmall ? _alertHeightSmall : _alertHeightMid) * scale;
@@ -73,7 +68,7 @@ class AlertRenderer extends StatelessWidget {
           color: bgColor,
           borderRadius: BorderRadius.circular(_alertBorderRadius * scale),
         ),
-        padding: EdgeInsets.all(_alertPadding * scale),
+        padding: EdgeInsets.symmetric(horizontal: _alertPadding * scale),
         child: size == _sizeSmall ? _smallContent() : _midContent(),
       ),
     );
@@ -96,7 +91,7 @@ class AlertRenderer extends StatelessWidget {
   /// title + subtitle
   Widget _midContent() {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(uiState.alertText1,
@@ -120,7 +115,7 @@ class AlertRenderer extends StatelessWidget {
   }
 
   /// full screen alert
-  Widget _fullAlert(double parentW, double parentH, Color bgColor) {
+  Widget _fullAlert(Color bgColor) {
     final isLong = uiState.alertText1.length > 15;
     final fontSize1 = (isLong ? 132.0 : 177.0) * scale;
 
