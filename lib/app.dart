@@ -1,10 +1,10 @@
-// scope app shell
+// opview app shell
 // dark theme, single screen, no navigation needed
 
 import 'package:flutter/material.dart';
-import 'package:scope/selfdrive/ui/ui_state.dart';
-import 'package:scope/selfdrive/ui/onroad/augmented_road_view.dart';
-import 'package:scope/services/connection_manager.dart';
+import 'package:opview/selfdrive/ui/ui_state.dart';
+import 'package:opview/selfdrive/ui/onroad/augmented_road_view.dart';
+import 'package:opview/services/connection_manager.dart';
 
 class ScopeApp extends StatefulWidget {
   const ScopeApp({super.key});
@@ -38,10 +38,10 @@ class _ScopeAppState extends State<ScopeApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      debugPrint('[scope] app resumed, reconnecting');
+      debugPrint('[opview] app resumed, reconnecting');
       _connectionManager.reconnect();
     } else if (state == AppLifecycleState.paused) {
-      debugPrint('[scope] app paused, stopping');
+      debugPrint('[opview] app paused, stopping');
       _connectionManager.pause();
     }
   }
@@ -50,7 +50,7 @@ class _ScopeAppState extends State<ScopeApp> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'scope',
+      title: 'opview',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(useMaterial3: true).copyWith(
         scaffoldBackgroundColor: Colors.black,

@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "org.dragonpilot.scope"
+    namespace = "org.dragonpilot.opview"
     // match dashy: explicit SDK versions for old headunit compat
     compileSdk = 35
     ndkVersion = flutter.ndkVersion
@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "org.dragonpilot.scope"
+        applicationId = "org.dragonpilot.opview"
         minSdk = 21          // Android 5.0 — same as dashy
         targetSdk = 34
         versionCode = flutter.versionCode

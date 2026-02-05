@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:scope/selfdrive/ui/ui_state.dart';
+import 'package:opview/selfdrive/ui/ui_state.dart';
 
 void main() {
   late UIState state;

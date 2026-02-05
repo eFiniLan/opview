@@ -5,7 +5,7 @@
 // three severities: normal (dark), userPrompt (orange), critical (red).
 
 import 'package:flutter/material.dart';
-import 'package:scope/selfdrive/ui/ui_state.dart';
+import 'package:opview/selfdrive/ui/ui_state.dart';
 
 // -- constants (alert_renderer.py:16-28) --
 

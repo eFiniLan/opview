@@ -1,7 +1,7 @@
 // Adapter layer abstraction
 // Parses incoming data and applies to state
 
-import 'package:scope/selfdrive/ui/ui_state.dart';
+import 'package:opview/selfdrive/ui/ui_state.dart';
 
 /// Abstract telemetry adapter interface
 abstract class TelemetryAdapter {

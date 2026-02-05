@@ -1,4 +1,4 @@
-// scope — openpilot onroad UI
+// opview — openpilot onroad UI
 // entry point: landscape, immersive, go
 
 import 'package:flutter/material.dart';

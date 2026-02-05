@@ -4,7 +4,7 @@
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:scope/data/models.dart';
+import 'package:opview/data/models.dart';
 
 // everything the stock UI subscribes to
 const bridgeServicesOut = [

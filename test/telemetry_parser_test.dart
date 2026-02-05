@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:scope/services/telemetry_parser.dart';
+import 'package:opview/services/telemetry_parser.dart';
 
 void main() {
   late TelemetryParser parser;

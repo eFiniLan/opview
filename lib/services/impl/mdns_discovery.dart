@@ -4,7 +4,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:bonsoir/bonsoir.dart';
-import 'package:scope/services/discovery.dart';
+import 'package:opview/services/discovery.dart';
 
 // bonsoir expects NO trailing dot
 const _serviceType = '_ssh._tcp';
@@ -30,7 +30,7 @@ class MdnsDiscovery implements Discovery {
           final service = event.service;
           if (service == null) return;
           if (!service.name.startsWith(_servicePrefix)) return;
-          debugPrint('[scope] found service: ${service.name}, resolving...');
+          debugPrint('[opview] found service: ${service.name}, resolving...');
           service.resolve(_discovery!.serviceResolver);
         } else if (event.type == BonsoirDiscoveryEventType.discoveryServiceResolved) {
           final service = event.service;
@@ -41,7 +41,7 @@ class MdnsDiscovery implements Discovery {
           final host = resolved.host;
           if (host == null || host.isEmpty) return;
 
-          debugPrint('[scope] resolved: ${service.name} → $host:${resolved.port}');
+          debugPrint('[opview] resolved: ${service.name} → $host:${resolved.port}');
           final device = DiscoveredDevice(
             displayName: _extractDisplayName(service.name, host),
             host: host,
@@ -52,9 +52,9 @@ class MdnsDiscovery implements Discovery {
       });
 
       await _discovery!.start();
-      debugPrint('[scope] discovery started (type: $_serviceType)');
+      debugPrint('[opview] discovery started (type: $_serviceType)');
     } catch (e) {
-      debugPrint('[scope] discovery failed to start: $e');
+      debugPrint('[opview] discovery failed to start: $e');
     }
   }
 
@@ -65,7 +65,7 @@ class MdnsDiscovery implements Discovery {
     try {
       await _discovery?.stop();
     } catch (e) {
-      debugPrint('[scope] discovery stop error: $e');
+      debugPrint('[opview] discovery stop error: $e');
     }
     _discovery = null;
   }

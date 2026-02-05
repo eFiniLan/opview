@@ -2,8 +2,8 @@
 // Parses individual cereal messages from webrtcd
 
 import 'dart:convert';
-import 'package:scope/services/adapter.dart';
-import 'package:scope/selfdrive/ui/ui_state.dart';
+import 'package:opview/services/adapter.dart';
+import 'package:opview/selfdrive/ui/ui_state.dart';
 
 // pre-compiled regex for NaN replacement
 final _nanRegex = RegExp(r'\bNaN\b');

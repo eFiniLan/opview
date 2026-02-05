@@ -8,8 +8,8 @@
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:scope/selfdrive/ui/ui_state.dart';
-import 'package:scope/common/transformations.dart';
+import 'package:opview/selfdrive/ui/ui_state.dart';
+import 'package:opview/common/transformations.dart';
 
 // -- constants (model_renderer.py:14-16) --
 

@@ -3,8 +3,8 @@
 
 import 'dart:async';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:scope/services/transport.dart';
-import 'package:scope/system/webrtc/webrtc_client.dart';
+import 'package:opview/services/transport.dart';
+import 'package:opview/system/webrtc/webrtc_client.dart';
 
 class WebRTCTransport implements Transport {
   final WebRTCClient _client = WebRTCClient();

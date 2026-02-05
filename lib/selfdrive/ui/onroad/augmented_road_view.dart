@@ -11,11 +11,11 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:scope/common/transformations.dart';
-import 'package:scope/selfdrive/ui/ui_state.dart';
-import 'package:scope/selfdrive/ui/onroad/model_renderer.dart';
-import 'package:scope/selfdrive/ui/onroad/hud_renderer.dart';
-import 'package:scope/selfdrive/ui/onroad/alert_renderer.dart';
+import 'package:opview/common/transformations.dart';
+import 'package:opview/selfdrive/ui/ui_state.dart';
+import 'package:opview/selfdrive/ui/onroad/model_renderer.dart';
+import 'package:opview/selfdrive/ui/onroad/hud_renderer.dart';
+import 'package:opview/selfdrive/ui/onroad/alert_renderer.dart';
 
 // -- border colors (augmented_road_view.py:23-27) --
 

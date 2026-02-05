@@ -5,7 +5,7 @@
 // one widget, two draw sections: set speed box + current speed.
 
 import 'package:flutter/material.dart';
-import 'package:scope/selfdrive/ui/ui_state.dart';
+import 'package:opview/selfdrive/ui/ui_state.dart';
 
 // -- constants (hud_renderer.py) --
 

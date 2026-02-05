@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:scope/system/webrtc/webrtc_client.dart';
+import 'package:opview/system/webrtc/webrtc_client.dart';
 
 void main() {
   group('preferH264', () {

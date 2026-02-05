@@ -10,14 +10,14 @@
 
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:scope/selfdrive/ui/ui_state.dart';
-import 'package:scope/services/discovery.dart';
-import 'package:scope/services/transport.dart';
-import 'package:scope/services/adapter.dart';
-import 'package:scope/services/impl/mdns_discovery.dart';
-import 'package:scope/services/impl/webrtc_transport.dart';
-import 'package:scope/services/impl/cereal_adapter.dart';
-import 'package:scope/services/wake_lock_service.dart' as wake_lock;
+import 'package:opview/selfdrive/ui/ui_state.dart';
+import 'package:opview/services/discovery.dart';
+import 'package:opview/services/transport.dart';
+import 'package:opview/services/adapter.dart';
+import 'package:opview/services/impl/mdns_discovery.dart';
+import 'package:opview/services/impl/webrtc_transport.dart';
+import 'package:opview/services/impl/cereal_adapter.dart';
+import 'package:opview/services/wake_lock_service.dart' as wake_lock;
 
 // fallback IP if discovery fails (for debugging)
 const _fallbackIp = '192.168.0.52';
@@ -79,7 +79,7 @@ class ConnectionManager {
     if (kDebugMode) {
       _discoveryTimer = Timer(_discoveryTimeout, () {
         if (_host != null || _paused) return;
-        debugPrint('[scope] discovery timeout, falling back to $_fallbackIp');
+        debugPrint('[opview] discovery timeout, falling back to $_fallbackIp');
         _discovery.stop();
         _host = _fallbackIp;
         _connect();
@@ -92,7 +92,7 @@ class ConnectionManager {
     if (_host != null) return; // already connecting to one
     _discoveryTimer?.cancel();
     _host = device.host;
-    debugPrint('[scope] discovered ${device.displayName} at ${device.host}');
+    debugPrint('[opview] discovered ${device.displayName} at ${device.host}');
     _discovery.stop(); // stop discovery, we have our target
     _connect();
   }
@@ -108,7 +108,7 @@ class ConnectionManager {
     _stateSub = null;
 
     try {
-      debugPrint('[scope] connecting to $_host (camera: $_streamType)');
+      debugPrint('[opview] connecting to $_host (camera: $_streamType)');
       await _transport.connect(_host!, camera: _streamType);
       if (epoch != _connectEpoch) return; // superseded by newer connect
       _retryCount = 0;
@@ -119,10 +119,10 @@ class ConnectionManager {
         _uiState.notifyNow();
       }
       _setConnected(true);
-      debugPrint('[scope] connected');
+      debugPrint('[opview] connected');
     } catch (e) {
       if (epoch != _connectEpoch) return; // superseded, don't reconnect
-      debugPrint('[scope] connection failed: $e');
+      debugPrint('[opview] connection failed: $e');
       _scheduleReconnect();
     } finally {
       if (epoch == _connectEpoch) _connecting = false;
@@ -160,7 +160,7 @@ class ConnectionManager {
     _uiState.streamType = target;
     _uiState.isSwitchingStream = true;
     _uiState.notifyNow();
-    debugPrint('[scope] camera switch → $_streamType');
+    debugPrint('[opview] camera switch → $_streamType');
     // immediate reconnect — no retry counting
     _teardown();
     _retryCount = 0;
@@ -172,7 +172,7 @@ class ConnectionManager {
     _stateSub?.cancel();
     _stateSub = _transport.stateStream.listen((state) {
       if (state == TransportState.failed) {
-        debugPrint('[scope] connection lost');
+        debugPrint('[opview] connection lost');
         _scheduleReconnect();
       }
     });
@@ -222,7 +222,7 @@ class ConnectionManager {
         _uiState.isSwitchingStream = false;
         _uiState.notifyNow();
       }
-      debugPrint('[scope] $_maxRetries retries failed, waiting ${_rediscoverDelay.inSeconds}s before re-discovery');
+      debugPrint('[opview] $_maxRetries retries failed, waiting ${_rediscoverDelay.inSeconds}s before re-discovery');
       _host = null;
       _retryCount = 0;
       _retryTimer = Timer(_rediscoverDelay, () {
@@ -233,7 +233,7 @@ class ConnectionManager {
       return;
     }
 
-    debugPrint('[scope] retry $_retryCount/$_maxRetries in ${_retryDelay.inSeconds}s');
+    debugPrint('[opview] retry $_retryCount/$_maxRetries in ${_retryDelay.inSeconds}s');
     _retryTimer = Timer(_retryDelay, () {
       _reconnecting = false;
       _connect();
@@ -244,14 +244,14 @@ class ConnectionManager {
   void pause() {
     if (_paused) return;
     _paused = true;
-    debugPrint('[scope] paused');
+    debugPrint('[opview] paused');
     _teardown();
   }
 
   /// tear down current connection and reconnect (or re-discover)
   void reconnect() {
     _paused = false;
-    debugPrint('[scope] reconnect requested');
+    debugPrint('[opview] reconnect requested');
     _teardown();
     _retryCount = 0;
 

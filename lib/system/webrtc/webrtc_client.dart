@@ -8,7 +8,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:scope/system/webrtc/webrtcd_api.dart';
+import 'package:opview/system/webrtc/webrtcd_api.dart';
 
 class WebRTCClient {
   RTCPeerConnection? _pc;

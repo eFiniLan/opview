@@ -1,4 +1,4 @@
-name: scope
+name: opview
 description: openpilot onroad UI over WebRTC
 publish_to: 'none'
 version: 0.1.0

@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>scope</string>
+	<string>opview</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -45,7 +45,7 @@
 		<string>_ssh._tcp.</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>scope needs local network access to discover and connect to your comma device</string>
+	<string>opview needs local network access to discover and connect to your comma device</string>
 	<!-- allow cleartext HTTP for LAN webrtcd -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
