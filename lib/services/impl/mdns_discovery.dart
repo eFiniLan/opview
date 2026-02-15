@@ -21,6 +21,7 @@ class MdnsDiscovery implements Discovery {
 
   @override
   Future<void> start() async {
+    await stop(); // clean up any previous discovery
     try {
       _discovery = BonsoirDiscovery(type: _serviceType);
       await _discovery!.ready;

@@ -110,7 +110,7 @@ class WebRTCClient {
     final dc = _dataChannel;
     _pc = null;
     _dataChannel = null;
-    videoRenderer.srcObject = null;
+    if (_initialized) videoRenderer.srcObject = null;
     dc?.close();
     await pc?.close();
   }

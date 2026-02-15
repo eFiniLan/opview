@@ -1,4 +1,4 @@
-package org.dragonpilot.scope
+package org.dragonpilot.opview
 
 import android.os.Bundle
 import android.view.WindowManager
@@ -7,7 +7,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity: FlutterActivity() {
-    private val CHANNEL = "org.dragonpilot.scope/wake_lock"
+    private val CHANNEL = "org.dragonpilot.opview/wake_lock"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
