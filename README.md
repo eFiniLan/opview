@@ -9,6 +9,25 @@
 A clone of [openpilot](https://github.com/commaai/openpilot)'s stock onroad UI, built in Flutter for iOS and Android.
 No 3D library needed. All projection is pure 3x3 matrix math in Dart.
 
+## Usage
+
+1. Connect your phone to the **same WiFi network** as your comma device
+2. Install and open opview
+3. Once the device is onroad, you'll see the live road camera with the full openpilot HUD overlay
+
+**Requirements:**
+- [openpilot](https://github.com/commaai/openpilot) with webrtcd enabled (see below), or [dragonpilot](https://github.com/dragonpilot-community/dragonpilot) 0.10.3+
+- Phone and comma device on the same local network
+- The comma device's `webrtcd` service must be reachable on port 5001 (default on stock openpilot)
+
+**Enabling webrtcd on stock openpilot:**
+
+In `selfdrive/manager/process_config.py`, find the `webrtcd` and `stream_encoderd` entries and change their condition from `notcar` to `or_(notcar, only_onroad)`:
+```python
+PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(notcar, only_onroad)),
+NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], or_(notcar, only_onroad)),
+```
+
 ## Architecture
 
 ```
