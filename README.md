@@ -4,6 +4,8 @@
 
 # opview
 
+**English** | [繁體中文](README_zh-TW.md)
+
 A clone of [openpilot](https://github.com/commaai/openpilot)'s stock onroad UI, built in Flutter for iOS and Android.
 No 3D library needed. All projection is pure 3x3 matrix math in Dart.
 
@@ -68,7 +70,7 @@ flutter build ios --release
 
 - **Android phones/tablets** — works out of the box
 - **Android headunits** — works, `minSdk 21` covers most aftermarket units
-- **iOS** — works, Bonjour entitlements pre-configured in Info.plist
+- **iOS** — not yet test built, Bonjour entitlements pre-configured in Info.plist
 - **Android Auto / Apple CarPlay** — not supported. Both platforms restrict apps to navigation, media, messaging, or EV charging categories and enforce template-based UIs with no custom rendering surfaces
 
 ## Branches
