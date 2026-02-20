@@ -2,6 +2,7 @@
 .metadata
 DESIGN.md
 .claude/
+/out/
 
 # Miscellaneous
 *.class
