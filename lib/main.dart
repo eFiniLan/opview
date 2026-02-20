@@ -19,5 +19,5 @@ void main() {
 
   // keep screen on: handled via FLAG_KEEP_SCREEN_ON in MainActivity.kt
 
-  runApp(const ScopeApp());
+  runApp(const OpviewApp());
 }

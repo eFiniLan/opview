@@ -12,7 +12,7 @@ import UIKit
     // wake lock: toggle idle timer via platform channel
     let controller = window?.rootViewController as! FlutterViewController
     let channel = FlutterMethodChannel(
-      name: "org.dragonpilot.scope/wake_lock",
+      name: "org.dragonpilot.opview/wake_lock",
       binaryMessenger: controller.binaryMessenger)
     channel.setMethodCallHandler { (call, result) in
       if call.method == "setKeepScreenOn" {

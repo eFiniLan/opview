@@ -6,14 +6,14 @@ import 'package:opview/selfdrive/ui/ui_state.dart';
 import 'package:opview/selfdrive/ui/onroad/augmented_road_view.dart';
 import 'package:opview/services/connection_manager.dart';
 
-class ScopeApp extends StatefulWidget {
-  const ScopeApp({super.key});
+class OpviewApp extends StatefulWidget {
+  const OpviewApp({super.key});
 
   @override
-  State<ScopeApp> createState() => _ScopeAppState();
+  State<OpviewApp> createState() => _OpviewAppState();
 }
 
-class _ScopeAppState extends State<ScopeApp> with WidgetsBindingObserver {
+class _OpviewAppState extends State<OpviewApp> with WidgetsBindingObserver {
   late final UIState _uiState;
   late final ConnectionManager _connectionManager;
 

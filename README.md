@@ -41,10 +41,10 @@ No 3D library needed. All projection is pure 3x3 matrix math in Dart.
 │   │       ├── webrtc_transport.dart      # WebRTC video + data channel
 │   │       └── cereal_adapter.dart        # }{ split, NaN sanitize, JSON decode
 │   └── data/
-│       └── models.dart                    # StreamRequest, CerealMessage, DiscoveredDevice
+│       └── models.dart                    # StreamRequest
 └── test/
     ├── transformations_test.dart          # Matrix math, camera configs
-    ├── telemetry_parser_test.dart         # }{ splitting, NaN sanitize
+    ├── telemetry_parser_test.dart         # (stub)
     ├── ui_state_test.dart                 # All apply methods, derived values
     ├── sdp_test.dart                      # H264 SDP rewriting
     └── models_test.dart                   # Data model serialization
