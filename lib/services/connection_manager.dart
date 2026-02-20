@@ -88,7 +88,7 @@ class ConnectionManager {
   }
 
   /// first device found → connect
-  void _onDeviceFound(device) {
+  void _onDeviceFound(DiscoveredDevice device) {
     if (_host != null) return; // already connecting to one
     _discoveryTimer?.cancel();
     _host = device.host;

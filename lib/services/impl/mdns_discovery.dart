@@ -24,25 +24,22 @@ class MdnsDiscovery implements Discovery {
     await stop(); // clean up any previous discovery
     try {
       _discovery = BonsoirDiscovery(type: _serviceType);
-      await _discovery!.ready;
+      await _discovery!.initialize();
 
       _eventSub = _discovery!.eventStream?.listen((event) {
-        if (event.type == BonsoirDiscoveryEventType.discoveryServiceFound) {
+        if (event is BonsoirDiscoveryServiceFoundEvent) {
           final service = event.service;
-          if (service == null) return;
           if (!service.name.startsWith(_servicePrefix)) return;
           debugPrint('[opview] found service: ${service.name}, resolving...');
           service.resolve(_discovery!.serviceResolver);
-        } else if (event.type == BonsoirDiscoveryEventType.discoveryServiceResolved) {
+        } else if (event is BonsoirDiscoveryServiceResolvedEvent) {
           final service = event.service;
-          if (service == null) return;
           if (!service.name.startsWith(_servicePrefix)) return;
 
-          final resolved = service as ResolvedBonsoirService;
-          final host = resolved.host;
+          final host = service.host;
           if (host == null || host.isEmpty) return;
 
-          debugPrint('[opview] resolved: ${service.name} → $host:${resolved.port}');
+          debugPrint('[opview] resolved: ${service.name} → $host:${service.port}');
           final device = DiscoveredDevice(
             displayName: _extractDisplayName(service.name, host),
             host: host,

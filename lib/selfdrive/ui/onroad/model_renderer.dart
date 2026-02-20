@@ -260,8 +260,8 @@ class ModelRendererPainter extends CustomPainter {
     return [...leftScreen, ...rightScreen.reversed];
   }
 
-  /// project a point with left/right offset, append to output lists if in clip region
-  /// matvec3 inlined to avoid allocating List<double> per call (~462 calls/frame)
+  // project a point with left/right offset, append to output lists if in clip region
+  // matvec3 inlined to avoid allocating List<double> per call (~462 calls/frame)
   void _projectPair(double x, double y, double z,
       double yOff, double zOff, List<Offset> leftOut, List<Offset> rightOut) {
     final t = carSpaceTransform;

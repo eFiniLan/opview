@@ -255,8 +255,4 @@ class UIState extends ChangeNotifier {
     return 0;
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }

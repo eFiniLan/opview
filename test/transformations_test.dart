@@ -116,11 +116,11 @@ void main() {
       final a = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0], [7.0, 8.0, 9.0]];
       final b = [[9.0, 8.0, 7.0], [6.0, 5.0, 4.0], [3.0, 2.0, 1.0]];
       final c = [[1.0, 0.0, 2.0], [0.0, 1.0, 2.0], [2.0, 1.0, 0.0]];
-      final ab_c = matmul3x3(matmul3x3(a, b), c);
-      final a_bc = matmul3x3(a, matmul3x3(b, c));
+      final abC = matmul3x3(matmul3x3(a, b), c);
+      final aBc = matmul3x3(a, matmul3x3(b, c));
       for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-          expect(ab_c[i][j], closeTo(a_bc[i][j], 1e-10));
+          expect(abC[i][j], closeTo(aBc[i][j], 1e-10));
         }
       }
     });
