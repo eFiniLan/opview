@@ -9,6 +9,25 @@
 複製 [openpilot](https://github.com/commaai/openpilot) 原廠行車介面，以 Flutter 建構，支援 iOS 與 Android。
 不需要 3D 函式庫，所有投影皆為純 Dart 3x3 矩陣運算。
 
+## 使用方式
+
+1. 將手機連接到與 comma 裝置**相同的 WiFi 網路**
+2. 安裝並開啟 opview
+3. 當裝置進入行車狀態後，即可看到即時道路畫面與完整的 openpilot HUD 覆蓋
+
+**需求：**
+- 已啟用 webrtcd 的 [openpilot](https://github.com/commaai/openpilot)（見下方說明），或 [dragonpilot](https://github.com/dragonpilot-community/dragonpilot) 0.10.3+
+- 手機與 comma 裝置在同一個區域網路
+- comma 裝置的 `webrtcd` 服務需可透過 port 5001 存取（原廠 openpilot 預設值）
+
+**在原廠 openpilot 啟用 webrtcd：**
+
+在 `selfdrive/manager/process_config.py` 中找到 `webrtcd` 和 `stream_encoderd`，將條件從 `notcar` 改為 `or_(notcar, only_onroad)`：
+```python
+PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(notcar, only_onroad)),
+NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], or_(notcar, only_onroad)),
+```
+
 ## 架構
 
 ```
@@ -79,21 +98,6 @@ flutter build ios --release
 |------|------|
 | `main` | 穩定版本 |
 | `perf-optimizations` | 實驗性效能改進 |
-
-### perf-optimizations
-
-針對低階裝置降低 CPU/GPU 使用率的效能調校：
-
-- **簡化車道線** — 使用描邊線條取代填充多邊形
-- **簡化道路邊緣** — 使用描邊線條取代填充多邊形
-- **簡化實驗模式漸層** — 5 個取樣點取代逐點漸層
-
-透過 `model_renderer.dart` 中的常數切換：
-```dart
-const useSimpleLaneLines = true;
-const useSimpleRoadEdges = true;
-const useSimpleExpGradient = true;
-```
 
 ## 移植來源
 
