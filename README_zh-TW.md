@@ -28,6 +28,20 @@ PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(notcar, only_onroad)),
 NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], or_(notcar, only_onroad)),
 ```
 
+**修復音訊裝置錯誤（ALSA「Device unavailable」）：**
+
+如果連線時出現 `500` 錯誤，且錯誤訊息包含 `pa_linux_alsa.c` 和 `OSError: [Errno -9985] Device unavailable`，表示 webrtcd 無法開啟音訊輸入裝置。修復方式為在 `system/webrtc/webrtcd.py` 中將音訊串流初始化包裹在 try/except 中：
+```python
+# 約第 144 行，將：
+builder.add_audio_stream(AudioInputStreamTrack() if not debug_mode else AudioStreamTrack())
+
+# 改為：
+try:
+    builder.add_audio_stream(AudioInputStreamTrack() if not debug_mode else AudioStreamTrack())
+except OSError:
+    pass
+```
+
 ## 架構
 
 ```

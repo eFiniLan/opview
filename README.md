@@ -28,6 +28,20 @@ PythonProcess("webrtcd", "system.webrtc.webrtcd", or_(notcar, only_onroad)),
 NativeProcess("stream_encoderd", "system/loggerd", ["./encoderd", "--stream"], or_(notcar, only_onroad)),
 ```
 
+**Fixing audio device error (ALSA "Device unavailable"):**
+
+If you see a `500` error when connecting with a traceback mentioning `pa_linux_alsa.c` and `OSError: [Errno -9985] Device unavailable`, webrtcd is failing to open an audio input device. To fix this, in `system/webrtc/webrtcd.py`, wrap the audio stream initialization in a try/except:
+```python
+# around line 144, change:
+builder.add_audio_stream(AudioInputStreamTrack() if not debug_mode else AudioStreamTrack())
+
+# to:
+try:
+    builder.add_audio_stream(AudioInputStreamTrack() if not debug_mode else AudioStreamTrack())
+except OSError:
+    pass
+```
+
 ## Architecture
 
 ```

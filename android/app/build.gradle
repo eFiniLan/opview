@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "org.dragonpilot.opview"
     // match dashy: explicit SDK versions for old headunit compat
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
