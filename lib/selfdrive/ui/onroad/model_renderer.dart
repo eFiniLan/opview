@@ -140,7 +140,11 @@ class ModelRendererPainter extends CustomPainter {
       return;
     }
 
-    final colors = state.allowThrottle ? throttleColors : noThrottleColors;
+    final blend = state.throttleBlend.clamp(0.0, 1.0);
+    final colors = [
+      for (int i = 0; i < throttleColors.length; i++)
+        Color.lerp(noThrottleColors[i], throttleColors[i], blend)!,
+    ];
     _drawGradientPolygon(canvas, pathPoly, colors, [0.0, 0.5, 1.0]);
   }
 

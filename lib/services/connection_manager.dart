@@ -118,10 +118,6 @@ class ConnectionManager {
       _retryCount = 0;
       _listenData();
       _listenState();
-      if (_uiState.isSwitchingStream) {
-        _uiState.isSwitchingStream = false;
-        _uiState.notifyNow();
-      }
       _setConnected(true);
       debugPrint('[opview] connected');
     } catch (e) {
@@ -162,8 +158,6 @@ class ConnectionManager {
     if (target == _streamType) return;
     _streamType = target;
     _uiState.streamType = target;
-    _uiState.isSwitchingStream = true;
-    _uiState.notifyNow();
     debugPrint('[opview] camera switch → $_streamType');
     // immediate reconnect — no retry counting
     _teardown();
@@ -221,10 +215,6 @@ class ConnectionManager {
 
     if (_retryCount > _maxRetries) {
       // give up on this host, wait then re-discover
-      if (_uiState.isSwitchingStream) {
-        _uiState.isSwitchingStream = false;
-        _uiState.notifyNow();
-      }
       debugPrint('[opview] $_maxRetries retries failed, waiting ${_rediscoverDelay.inSeconds}s before re-discovery');
       _host = null;
       _retryCount = 0;

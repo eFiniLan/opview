@@ -39,8 +39,7 @@ class AugmentedRoadView extends StatefulWidget {
   State<AugmentedRoadView> createState() => _AugmentedRoadViewState();
 }
 
-class _AugmentedRoadViewState extends State<AugmentedRoadView>
-    with SingleTickerProviderStateMixin {
+class _AugmentedRoadViewState extends State<AugmentedRoadView> {
   // cached transform inputs — only recompute when these change
   List<double> _cachedRpyCalib = [];
   List<double> _cachedWideFromDeviceEuler = [];
@@ -54,43 +53,8 @@ class _AugmentedRoadViewState extends State<AugmentedRoadView>
     [0, 0, 0], [0, 0, 0], [0, 0, 0],
   ];
 
-  // camera switch fade animation
-  late final AnimationController _fadeController;
-  bool _wasSwitchingStream = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _fadeController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 250),
-      value: 1.0,
-    );
-  }
-
-  @override
-  void dispose() {
-    _fadeController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
-    // camera switch fade: fade out video+model, keep HUD/border visible
-    final isSwitching = widget.uiState.isSwitchingStream;
-    if (isSwitching && !_wasSwitchingStream) {
-      _fadeController.animateTo(0.0,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-      );
-    } else if (!isSwitching && _wasSwitchingStream) {
-      _fadeController.animateTo(1.0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeIn,
-      );
-    }
-    _wasSwitchingStream = isSwitching;
-
     return Scaffold(
       backgroundColor: Colors.black,
       body: LayoutBuilder(builder: (context, constraints) {
@@ -111,25 +75,17 @@ class _AugmentedRoadViewState extends State<AugmentedRoadView>
         return Stack(
           fit: StackFit.expand,
           children: [
-            // layer 0 + 1a: video + model — faded during camera switch
-            FadeTransition(
-              opacity: _fadeController,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  _videoLayer(),
-                  ClipRect(
-                    clipper: _ContentClipper(contentRect),
-                    child: CustomPaint(
-                      size: Size(screenW, screenH),
-                      painter: ModelRendererPainter(
-                        state: widget.uiState,
-                        carSpaceTransform: transform,
-                        contentRect: contentRect,
-                      ),
-                    ),
-                  ),
-                ],
+            // layer 0 + 1a: video + model overlay
+            _videoLayer(),
+            ClipRect(
+              clipper: _ContentClipper(contentRect),
+              child: CustomPaint(
+                size: Size(screenW, screenH),
+                painter: ModelRendererPainter(
+                  state: widget.uiState,
+                  carSpaceTransform: transform,
+                  contentRect: contentRect,
+                ),
               ),
             ),
 

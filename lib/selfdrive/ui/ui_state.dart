@@ -70,6 +70,10 @@ class UIState extends ChangeNotifier {
   // longitudinalPlan
   bool allowThrottle = true;
 
+  // throttle blend — smooth fade between throttle/no-throttle path colors
+  // first-order filter: tau=0.25s, updated at modelV2 rate (~20Hz)
+  double throttleBlend = 1.0; // 1.0 = full throttle colors, 0.0 = no-throttle
+
   // deviceState / roadCameraState — for camera intrinsics lookup
   String deviceType = '';
   String sensor = '';
@@ -79,9 +83,6 @@ class UIState extends ChangeNotifier {
 
   // active camera: 'road' or 'wideRoad' (switches on experimental mode)
   String streamType = 'road';
-
-  // true while reconnecting for a camera switch (drives fade animation)
-  bool isSwitchingStream = false;
 
   // connection state — drives "Connecting..." overlay + screen wake lock
   bool isConnected = false;
@@ -156,6 +157,12 @@ class UIState extends ChangeNotifier {
     }
     _fillDoublesFixed(roadEdgeStds, data['roadEdgeStds'], 2);
     _fillDoubles(accelerationX, data['acceleration']?['x']);
+
+    // smooth throttle blend: first-order filter (tau=0.25s at ~20Hz → k≈0.167)
+    const k = 0.167; // dt / (tau + dt) = 0.05 / (0.25 + 0.05)
+    final target = allowThrottle ? 1.0 : 0.0;
+    throttleBlend = throttleBlend + k * (target - throttleBlend);
+
     _notify();  // data-driven: render on modelV2 arrival
   }
 
