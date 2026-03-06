@@ -18,10 +18,7 @@ import 'package:opview/services/impl/mdns_discovery.dart';
 import 'package:opview/services/impl/webrtc_transport.dart';
 import 'package:opview/services/impl/cereal_adapter.dart';
 import 'package:opview/services/wake_lock_service.dart' as wake_lock;
-
-// fallback IP if discovery fails (for debugging)
-const _fallbackIp = '192.168.0.52';
-const _discoveryTimeout = Duration(seconds: 5);
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 // retry config
 const _retryDelay = Duration(seconds: 2);
@@ -55,7 +52,8 @@ class ConnectionManager {
   StreamSubscription? _dataSub;
   StreamSubscription? _stateSub;
   Timer? _retryTimer;
-  Timer? _discoveryTimer;
+  StreamSubscription? _connectivitySub;
+  bool _hadWifi = false;
   bool _connecting = false;
   bool _paused = false;
   bool _reconnecting = false;  // guard against re-entrant _scheduleReconnect
@@ -64,33 +62,38 @@ class ConnectionManager {
   static const _maxRetries = 3;
   String _streamType = 'road';
 
-  /// start discovery + auto-connect
+  /// start discovery + auto-connect + network monitoring
   void start() {
     _startDiscovery();
+    _listenConnectivity();
+  }
+
+  /// monitor WiFi state — restart discovery when WiFi connects
+  void _listenConnectivity() {
+    _connectivitySub?.cancel();
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((result) {
+      final hasWifi = result.contains(ConnectivityResult.wifi);
+      if (hasWifi && !_hadWifi) {
+        debugPrint('[opview] WiFi connected, restarting discovery');
+        _hadWifi = true;
+        if (_host == null && !_paused) {
+          _startDiscovery();
+        }
+      } else if (!hasWifi && _hadWifi) {
+        _hadWifi = false;
+      }
+    });
   }
 
   Future<void> _startDiscovery() async {
     _deviceSub?.cancel();
-    _discoveryTimer?.cancel();
     _deviceSub = _discovery.devices.listen(_onDeviceFound);
     await _discovery.start();
-
-    // fallback to debug IP if discovery times out (debug builds only)
-    if (kDebugMode) {
-      _discoveryTimer = Timer(_discoveryTimeout, () {
-        if (_host != null || _paused) return;
-        debugPrint('[opview] discovery timeout, falling back to $_fallbackIp');
-        _discovery.stop();
-        _host = _fallbackIp;
-        _connect();
-      });
-    }
   }
 
   /// first device found → connect
   void _onDeviceFound(DiscoveredDevice device) {
     if (_host != null) return; // already connecting to one
-    _discoveryTimer?.cancel();
     _host = device.host;
     debugPrint('[opview] discovered ${device.displayName} at ${device.host}');
     _discovery.stop(); // stop discovery, we have our target
@@ -190,7 +193,6 @@ class ConnectionManager {
   void _teardown() {
     _connectEpoch++;  // invalidate any in-flight _transport.connect()
     _retryTimer?.cancel();
-    _discoveryTimer?.cancel();
     _dataSub?.cancel();
     _stateSub?.cancel();
     _stateSub = null;
@@ -248,22 +250,20 @@ class ConnectionManager {
     _teardown();
   }
 
-  /// tear down current connection and reconnect (or re-discover)
+  /// tear down current connection and re-discover
+  /// always re-discovers to handle IP changes (e.g. DHCP renewal while paused)
   void reconnect() {
     _paused = false;
     debugPrint('[opview] reconnect requested');
     _teardown();
     _retryCount = 0;
-
-    if (_host != null) {
-      _connect();
-    } else {
-      _startDiscovery();
-    }
+    _host = null;
+    _startDiscovery();
   }
 
   Future<void> dispose() async {
     _retryTimer?.cancel();
+    _connectivitySub?.cancel();
     _teardown();
     _deviceSub?.cancel();
     _discovery.dispose();

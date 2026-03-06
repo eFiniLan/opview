@@ -12,6 +12,7 @@ dependencies:
   flutter_webrtc: ^1.3.0
   bonsoir: ^6.0.1
   http: ^1.2.0
+  connectivity_plus: ^7.0.0
 
 dev_dependencies:
   flutter_test:
