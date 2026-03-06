@@ -8,8 +8,14 @@ on:
   workflow_dispatch:
 
 jobs:
-  generate:
+  screenshots:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      pages: write
+      id-token: write
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,10 +26,125 @@ jobs:
 
       - run: flutter pub get
 
-      - run: flutter test test/golden/screenshot_test.dart --update-goldens --tags golden
+      # on PRs: compare against committed goldens
+      - name: Compare screenshots
+        if: github.event_name == 'pull_request'
+        id: compare
+        run: |
+          set +e
+          flutter test test/golden/screenshot_test.dart --tags golden 2>&1 | tee golden_output.txt
+          exit_code=${PIPESTATUS[0]}
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v4
+          # count failures
+          changed=$(grep -c "does not match" golden_output.txt || echo 0)
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      # generate fresh screenshots (for artifacts + PR comment)
+      - name: Generate screenshots
+        if: github.event_name == 'pull_request'
+        run: flutter test test/golden/screenshot_test.dart --update-goldens --tags golden
+
+      # collect failure diffs if any
+      - name: Collect diffs
+        if: github.event_name == 'pull_request' && steps.compare.outputs.changed != '0'
+        run: |
+          mkdir -p /tmp/screenshot-diffs
+          find test/golden/goldens/failures -name "*.png" -exec cp {} /tmp/screenshot-diffs/ \; 2>/dev/null || true
+
+      - name: Upload screenshots
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
         with:
           name: screenshots
           path: test/golden/goldens/
           retention-days: 30
+
+      - name: Upload diffs
+        if: github.event_name == 'pull_request' && steps.compare.outputs.changed != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-diffs
+          path: /tmp/screenshot-diffs/
+          retention-days: 30
+
+      # post PR comment
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const changed = parseInt('${{ steps.compare.outputs.changed }}') || 0;
+            const passed = changed === 0;
+            const icon = passed ? ':white_check_mark:' : ':warning:';
+            const summary = passed
+              ? 'All screenshots match baseline.'
+              : `**${changed} screenshot(s) changed.** Download the \`screenshot-diffs\` artifact to review.`;
+
+            const body = [
+              `## ${icon} Screenshot Review`,
+              '',
+              summary,
+              '',
+              '<details><summary>View all screenshots</summary>',
+              '',
+              '| Device | Scenario | Preview |',
+              '|--------|----------|---------|',
+            ];
+
+            const devices = ['phone', 'tablet', 'headunit', 'full_hd'];
+            const scenarios = ['engaged', 'disengaged', 'alert_calibrating', 'alert_small', 'alert_prompt', 'alert_soft_disable', 'alert_critical'];
+            const run_url = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            for (const d of devices) {
+              for (const s of scenarios) {
+                body.push(`| ${d} | ${s.replace(/_/g, ' ')} | [${d}_${s}.png](${run_url}) |`);
+              }
+            }
+
+            body.push('', '</details>', '', `[Download screenshots](${run_url})`);
+
+            // update or create comment
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body?.includes('Screenshot Review'));
+
+            const commentBody = body.join('\n');
+            if (existing) {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: existing.id,
+                body: commentBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.issue.number,
+                body: commentBody,
+              });
+            }
+
+      # on main push: deploy gallery to GitHub Pages
+      - name: Generate screenshots for Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: flutter test test/golden/screenshot_test.dart --update-goldens --tags golden
+
+      - name: Build Pages site
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p _site
+          cp docs/gallery/index.html _site/
+          cp -r test/golden/goldens _site/goldens
+
+      - name: Upload Pages artifact
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/deploy-pages@v4

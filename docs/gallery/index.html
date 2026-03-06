@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>opview UI Gallery</title>
+<style>
+  :root { --bg: #0a0a0a; --fg: #e0e0e0; --muted: #666; --accent: #167f40; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--fg); font-family: -apple-system, system-ui, sans-serif; padding: 2rem; }
+  h1 { font-size: 1.5rem; font-weight: 500; margin-bottom: 0.5rem; }
+  .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: 0.9rem; }
+
+  /* filters */
+  .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
+  .filters button {
+    background: #1a1a1a; border: 1px solid #333; color: var(--fg);
+    padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+  }
+  .filters button.active { background: var(--accent); border-color: var(--accent); }
+
+  /* grid */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 2rem; }
+
+  /* device frame */
+  .device { background: #111; border-radius: 12px; overflow: hidden; }
+  .device-header { padding: 0.6rem 1rem; display: flex; justify-content: space-between; align-items: center; }
+  .device-name { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .device-res { font-size: 0.75rem; color: var(--muted); }
+
+  /* phone mockup */
+  .frame-phone .device-screen { padding: 8px 20px; background: #000; }
+  .frame-phone .device-screen img { border-radius: 8px; }
+
+  /* tablet mockup */
+  .frame-tablet .device-screen { padding: 10px 16px; background: #000; }
+  .frame-tablet .device-screen img { border-radius: 6px; }
+
+  /* headunit mockup */
+  .frame-headunit .device-screen { padding: 6px 8px; background: #000; }
+  .frame-headunit .device-screen img { border-radius: 4px; }
+
+  /* full hd — no frame, just screen */
+  .frame-full_hd .device-screen { padding: 4px; background: #000; }
+
+  .device-screen img { width: 100%; height: auto; display: block; }
+  .scenario-label { padding: 0.4rem 1rem 0.6rem; font-size: 0.75rem; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<h1>opview UI Gallery</h1>
+<p class="subtitle">Auto-generated screenshots from golden tests</p>
+
+<div class="filters">
+  <span style="color:var(--muted);line-height:2;margin-right:0.5rem;">Device:</span>
+  <button class="active" data-filter-device="all">All</button>
+  <button data-filter-device="phone">Phone</button>
+  <button data-filter-device="tablet">Tablet</button>
+  <button data-filter-device="headunit">Headunit</button>
+  <button data-filter-device="full_hd">Full HD</button>
+</div>
+<div class="filters">
+  <span style="color:var(--muted);line-height:2;margin-right:0.5rem;">Scenario:</span>
+  <button class="active" data-filter-scenario="all">All</button>
+  <button data-filter-scenario="engaged">Engaged</button>
+  <button data-filter-scenario="disengaged">Disengaged</button>
+  <button data-filter-scenario="alert_small">Alert Small</button>
+  <button data-filter-scenario="alert_prompt">Alert Prompt</button>
+  <button data-filter-scenario="alert_soft_disable">Soft Disable</button>
+  <button data-filter-scenario="alert_critical">Alert Critical</button>
+  <button data-filter-scenario="alert_calibrating">Calibrating</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<script>
+const devices = [
+  { id: 'phone', name: 'Phone', res: '844 x 390' },
+  { id: 'tablet', name: 'Tablet', res: '1024 x 768' },
+  { id: 'headunit', name: 'Headunit', res: '1280 x 480' },
+  { id: 'full_hd', name: 'Full HD', res: '1920 x 1080' },
+];
+const scenarios = [
+  'engaged', 'disengaged', 'alert_calibrating', 'alert_small',
+  'alert_prompt', 'alert_soft_disable', 'alert_critical',
+];
+
+const grid = document.getElementById('grid');
+
+// detect if running on GitHub Pages (goldens/) or locally (../../test/golden/goldens/)
+const isPages = location.hostname.includes('github.io') || location.pathname.includes('_site');
+const imgBase = isPages ? 'goldens' : '../../test/golden/goldens';
+
+for (const device of devices) {
+  for (const scenario of scenarios) {
+    const card = document.createElement('div');
+    card.className = `device frame-${device.id}`;
+    card.dataset.device = device.id;
+    card.dataset.scenario = scenario;
+    card.innerHTML = `
+      <div class="device-header">
+        <span class="device-name">${device.name}</span>
+        <span class="device-res">${device.res}</span>
+      </div>
+      <div class="device-screen">
+        <img src="${imgBase}/${device.id}_${scenario}.png"
+             alt="${device.name} - ${scenario}"
+             loading="lazy">
+      </div>
+      <div class="scenario-label">${scenario.replace(/_/g, ' ')}</div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+// filtering
+let activeDevice = 'all', activeScenario = 'all';
+
+function applyFilters() {
+  for (const card of grid.children) {
+    const dMatch = activeDevice === 'all' || card.dataset.device === activeDevice;
+    const sMatch = activeScenario === 'all' || card.dataset.scenario === activeScenario;
+    card.style.display = (dMatch && sMatch) ? '' : 'none';
+  }
+}
+
+document.querySelectorAll('[data-filter-device]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-filter-device]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeDevice = btn.dataset.filterDevice;
+    applyFilters();
+  });
+});
+
+document.querySelectorAll('[data-filter-scenario]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('[data-filter-scenario]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeScenario = btn.dataset.filterScenario;
+    applyFilters();
+  });
+});
+</script>
+</body>
+</html>
