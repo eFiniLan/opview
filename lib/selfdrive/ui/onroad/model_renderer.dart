@@ -61,6 +61,12 @@ class ModelRendererPainter extends CustomPainter {
   late Rect _clipRegion;
   late double _pathOffsetZ;
 
+  // reusable working lists — cleared and refilled each call to avoid allocations
+  final _leftScreen = <Offset>[];
+  final _rightScreen = <Offset>[];
+  final _expColors = <Color>[];
+  final _expStops = <double>[];
+
   @override
   void paint(Canvas canvas, Size size) {
     if (state.pathX.isEmpty) return;
@@ -148,8 +154,8 @@ class ModelRendererPainter extends CustomPainter {
       return;
     }
 
-    final colors = <Color>[];
-    final stops = <double>[];
+    _expColors.clear();
+    _expStops.clear();
 
     for (int i = 0; i < maxLen; i++) {
       final trackY = pathPoly[i].dy;
@@ -161,12 +167,12 @@ class ModelRendererPainter extends CustomPainter {
       final lightness = _lerp(0.95, 0.62, saturation);
       final alpha = _lerp(0.4, 0.0, ((linGradPoint - 0.375) / 0.375).clamp(0.0, 1.0));
 
-      colors.add(_hslaToColor(pathHue, saturation, lightness, alpha));
-      stops.add(linGradPoint);
+      _expColors.add(_hslaToColor(pathHue, saturation, lightness, alpha));
+      _expStops.add(linGradPoint);
     }
 
-    if (colors.length > 1) {
-      _drawGradientPolygon(canvas, pathPoly, colors, stops);
+    if (_expColors.length > 1) {
+      _drawGradientPolygon(canvas, pathPoly, _expColors, _expStops);
     } else {
       _drawPolygon(canvas, pathPoly, const Color.fromARGB(30, 255, 255, 255));
     }
@@ -216,13 +222,13 @@ class ModelRendererPainter extends CustomPainter {
     final n = min(xList.length, min(yList.length, zList.length));
     if (n == 0) return [];
 
-    final leftScreen = <Offset>[];
-    final rightScreen = <Offset>[];
+    _leftScreen.clear();
+    _rightScreen.clear();
 
     final end = min(maxIdx + 1, n);
     for (int i = 0; i < end; i++) {
       if (xList[i] < 0) continue;
-      _projectPair(xList[i], yList[i], zList[i], yOff, zOff, leftScreen, rightScreen);
+      _projectPair(xList[i], yList[i], zList[i], yOff, zOff, _leftScreen, _rightScreen);
     }
 
     // interpolate endpoint for smooth ending
@@ -234,30 +240,30 @@ class ModelRendererPainter extends CustomPainter {
           maxDistance,
           yList[maxIdx] + t * (yList[maxIdx + 1] - yList[maxIdx]),
           zList[maxIdx] + t * (zList[maxIdx + 1] - zList[maxIdx]),
-          yOff, zOff, leftScreen, rightScreen,
+          yOff, zOff, _leftScreen, _rightScreen,
         );
       }
     }
 
-    if (leftScreen.isEmpty) return [];
+    if (_leftScreen.isEmpty) return [];
 
     // handle Y-inversion on hills: keep only monotonically decreasing Y
-    if (!allowInvert && leftScreen.length > 1) {
+    if (!allowInvert && _leftScreen.length > 1) {
       final kept = <int>[0];
-      var minY = leftScreen[0].dy;
-      for (int i = 1; i < leftScreen.length; i++) {
-        if (leftScreen[i].dy <= minY) {
-          minY = leftScreen[i].dy;
+      var minY = _leftScreen[0].dy;
+      for (int i = 1; i < _leftScreen.length; i++) {
+        if (_leftScreen[i].dy <= minY) {
+          minY = _leftScreen[i].dy;
           kept.add(i);
         }
       }
       if (kept.isEmpty) return [];
-      final filteredLeft = kept.map((i) => leftScreen[i]).toList();
-      final filteredRight = kept.map((i) => rightScreen[i]).toList();
+      final filteredLeft = kept.map((i) => _leftScreen[i]).toList();
+      final filteredRight = kept.map((i) => _rightScreen[i]).toList();
       return [...filteredLeft, ...filteredRight.reversed];
     }
 
-    return [...leftScreen, ...rightScreen.reversed];
+    return [..._leftScreen, ..._rightScreen.reversed];
   }
 
   // project a point with left/right offset, append to output lists if in clip region

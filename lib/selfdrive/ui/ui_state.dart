@@ -136,34 +136,34 @@ class UIState extends ChangeNotifier {
   }
 
   void applyModelV2(Map<String, dynamic> data) {
-    pathX = _toDoubles(data['position']?['x']);
-    pathY = _toDoubles(data['position']?['y']);
-    pathZ = _toDoubles(data['position']?['z']);
+    _fillDoubles(pathX, data['position']?['x']);
+    _fillDoubles(pathY, data['position']?['y']);
+    _fillDoubles(pathZ, data['position']?['z']);
 
     final lanes = data['laneLines'] as List? ?? [];
     for (int i = 0; i < 4 && i < lanes.length; i++) {
-      laneLineX[i] = _toDoubles(lanes[i]['x']);
-      laneLineY[i] = _toDoubles(lanes[i]['y']);
-      laneLineZ[i] = _toDoubles(lanes[i]['z']);
+      _fillDoubles(laneLineX[i], lanes[i]['x']);
+      _fillDoubles(laneLineY[i], lanes[i]['y']);
+      _fillDoubles(laneLineZ[i], lanes[i]['z']);
     }
-    laneLineProbs = _toDoublesFixed(_toDoubles(data['laneLineProbs']), 4);
+    _fillDoublesFixed(laneLineProbs, data['laneLineProbs'], 4);
 
     final edges = data['roadEdges'] as List? ?? [];
     for (int i = 0; i < 2 && i < edges.length; i++) {
-      roadEdgeX[i] = _toDoubles(edges[i]['x']);
-      roadEdgeY[i] = _toDoubles(edges[i]['y']);
-      roadEdgeZ[i] = _toDoubles(edges[i]['z']);
+      _fillDoubles(roadEdgeX[i], edges[i]['x']);
+      _fillDoubles(roadEdgeY[i], edges[i]['y']);
+      _fillDoubles(roadEdgeZ[i], edges[i]['z']);
     }
-    roadEdgeStds = _toDoublesFixed(_toDoubles(data['roadEdgeStds']), 2);
-    accelerationX = _toDoubles(data['acceleration']?['x']);
+    _fillDoublesFixed(roadEdgeStds, data['roadEdgeStds'], 2);
+    _fillDoubles(accelerationX, data['acceleration']?['x']);
     _notify();  // data-driven: render on modelV2 arrival
   }
 
   void applyLiveCalibration(Map<String, dynamic> data) {
-    rpyCalib = _toDoubles(data['rpyCalib']);
-    wideFromDeviceEuler = _toDoubles(data['wideFromDeviceEuler']);
+    _fillDoubles(rpyCalib, data['rpyCalib']);
+    _fillDoubles(wideFromDeviceEuler, data['wideFromDeviceEuler']);
     calStatus = data['calStatus'] as String? ?? '';
-    calibHeight = _toDoubles(data['height']);
+    _fillDoubles(calibHeight, data['height']);
     // no notify — picked up on next modelV2
   }
 
@@ -217,17 +217,27 @@ class UIState extends ChangeNotifier {
 
   // -- helpers --
 
-  List<double> _toDoubles(dynamic list) {
-    if (list == null) return [];
-    if (list is List) return list.map((e) => (e as num?)?.toDouble() ?? 0.0).toList();
-    return [];
+  /// Clear [target] and refill from [source] — reuses the existing list.
+  void _fillDoubles(List<double> target, dynamic source) {
+    target.clear();
+    if (source is List) {
+      for (final e in source) {
+        target.add((e as num?)?.toDouble() ?? 0.0);
+      }
+    }
   }
 
-  /// ensure list has exactly [n] elements, padding with 0.0 or truncating
-  List<double> _toDoublesFixed(List<double> list, int n) {
-    if (list.length == n) return list;
-    if (list.length > n) return list.sublist(0, n);
-    return [...list, ...List.filled(n - list.length, 0.0)];
+  /// Clear [target] and refill from [source], ensuring exactly [n] elements.
+  void _fillDoublesFixed(List<double> target, dynamic source, int n) {
+    target.clear();
+    if (source is List) {
+      for (int i = 0; i < n && i < source.length; i++) {
+        target.add((source[i] as num?)?.toDouble() ?? 0.0);
+      }
+    }
+    while (target.length < n) {
+      target.add(0.0);
+    }
   }
 
   int _alertSizeFromString(dynamic v) {
