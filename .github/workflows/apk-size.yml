@@ -1,0 +1,84 @@
+name: APK Size
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  size:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: base
+
+      - uses: actions/checkout@v4
+        with:
+          path: pr
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Build base APK
+        run: |
+          cd base
+          flutter pub get
+          flutter build apk --release
+          echo "BASE_SIZE=$(stat -c%s build/app/outputs/flutter-apk/app-release.apk)" >> "$GITHUB_ENV"
+
+      - name: Build PR APK
+        run: |
+          cd pr
+          flutter pub get
+          flutter build apk --release
+          echo "PR_SIZE=$(stat -c%s build/app/outputs/flutter-apk/app-release.apk)" >> "$GITHUB_ENV"
+
+      - name: Comment size diff
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const base = parseInt(process.env.BASE_SIZE);
+            const pr = parseInt(process.env.PR_SIZE);
+            const diff = pr - base;
+            const fmt = (b) => (b / 1024 / 1024).toFixed(2) + ' MB';
+            const sign = diff > 0 ? '+' : '';
+            const emoji = diff > 500000 ? '⚠️' : diff < -500000 ? '🎉' : '📦';
+
+            const body = [
+              `${emoji} **APK Size**`,
+              '',
+              '| | Size |',
+              '|---|---|',
+              `| main | ${fmt(base)} |`,
+              `| PR | ${fmt(pr)} |`,
+              `| diff | ${sign}${fmt(diff)} |`,
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find(c => c.body.includes('**APK Size**'));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

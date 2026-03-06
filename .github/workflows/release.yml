@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      - run: flutter analyze --no-fatal-infos
+
+      - run: flutter test
+
+      - run: flutter build apk --release
+
+      - name: Rename APK
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          cp build/app/outputs/flutter-apk/app-release.apk "opview-${version}.apk"
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          prev_tag=$(git describe --tags --abbrev=0 "$GITHUB_REF_NAME^" 2>/dev/null || echo "")
+          if [ -n "$prev_tag" ]; then
+            log=$(git log --pretty=format:'- %s' "${prev_tag}..${GITHUB_REF_NAME}^")
+          else
+            log="- Initial release"
+          fi
+          {
+            echo 'body<<EOF'
+            echo "$log"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body: |
+            ## What's Changed
+
+            ${{ steps.changelog.outputs.body }}
+
+            ## Download
+
+            - **opview-${{ github.ref_name }}.apk** — Universal Android APK (sideload)
+          files: opview-*.apk
