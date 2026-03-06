@@ -49,6 +49,7 @@ except OSError:
 │   └── logo.png                           # Source icon (generates all app icons)
 ├── scripts/
 │   ├── build.sh                           # Build script (Android/iOS)
+│   ├── release.sh                         # Bump version, tag, push (CI publishes)
 │   └── generate_icons.py                  # Icon generator from logo.png
 ├── lib/
 │   ├── main.dart                          # Entry point, landscape lock, immersive
@@ -98,6 +99,17 @@ scripts/build.sh ios       # iOS (requires macOS + Xcode)
 flutter build apk --release
 flutter build ios --release
 ```
+
+## Release
+
+```bash
+scripts/release.sh              # bump patch (0.1.0 → 0.1.1)
+scripts/release.sh minor        # bump minor (0.1.0 → 0.2.0)
+scripts/release.sh major        # bump major (0.1.0 → 1.0.0)
+scripts/release.sh 0.3.0        # set explicit version
+```
+
+This bumps `pubspec.yaml`, commits, tags, and pushes. GitHub Actions CI then builds the APK and creates a GitHub Release automatically.
 
 ## Platform Notes
 

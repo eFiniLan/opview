@@ -49,6 +49,7 @@ except OSError:
 │   └── logo.png                           # 來源圖示（產生所有 app icon）
 ├── scripts/
 │   ├── build.sh                           # 建置腳本（Android/iOS）
+│   ├── release.sh                         # 版本升級、標籤、推送（CI 自動發布）
 │   └── generate_icons.py                  # 從 logo.png 產生圖示
 ├── lib/
 │   ├── main.dart                          # 進入點、橫向鎖定、沉浸模式
@@ -98,6 +99,17 @@ scripts/build.sh ios       # iOS（需要 macOS + Xcode）
 flutter build apk --release
 flutter build ios --release
 ```
+
+## 發布
+
+```bash
+scripts/release.sh              # 升級修訂號（0.1.0 → 0.1.1）
+scripts/release.sh minor        # 升級次版號（0.1.0 → 0.2.0）
+scripts/release.sh major        # 升級主版號（0.1.0 → 1.0.0）
+scripts/release.sh 0.3.0        # 指定版本號
+```
+
+此腳本會更新 `pubspec.yaml`、提交、建立標籤並推送。GitHub Actions CI 會自動建置 APK 並建立 GitHub Release。
 
 ## 平台說明
 
