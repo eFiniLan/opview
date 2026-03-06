@@ -301,8 +301,9 @@ class ModelRendererPainter extends CustomPainter {
     }
     lv.fillAlpha = fillAlpha.round();
 
-    // size: bigger when closer
-    final sz = ((25 * 30) / (dRel / 3 + 30)).clamp(15.0, 30.0) * 2.35;
+    // size: bigger when closer, scaled to match stock 1080p reference
+    final scale = contentRect.height / 1080.0;
+    final sz = ((25 * 30) / (dRel / 3 + 30)).clamp(15.0, 30.0) * 2.35 * scale;
     final x = point.dx.clamp(0.0, contentRect.width - sz / 2);
     final y = min(point.dy, contentRect.height - sz * 0.6);
 
