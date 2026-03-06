@@ -3,6 +3,7 @@
 DESIGN.md
 .claude/
 /out/
+test/golden/goldens/
 
 # Miscellaneous
 *.class
