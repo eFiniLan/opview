@@ -2,37 +2,50 @@
 // Parses individual cereal messages from webrtcd
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:opview/services/adapter.dart';
 import 'package:opview/selfdrive/ui/ui_state.dart';
 
 // pre-compiled regex for NaN replacement
 final _nanRegex = RegExp(r'\bNaN\b');
 
+// max buffer size before forced reset (prevents unbounded growth from malformed data)
+const _maxBufferSize = 256 * 1024; // 256 KB
+
 class CerealAdapter implements TelemetryAdapter {
-  String _buffer = '';
+  final _buffer = StringBuffer();
 
   @override
   bool apply(UIState state, String rawMessage) {
-    _buffer += rawMessage;
+    if (_buffer.length + rawMessage.length > _maxBufferSize) {
+      debugPrint('[opview] buffer overflow (${_buffer.length + rawMessage.length} bytes), dropping malformed data');
+      _buffer.clear();
+      return false;
+    }
+    _buffer.write(rawMessage);
     bool didUpdate = false;
 
     // split on }{ boundaries (concatenated JSON objects)
+    var s = _buffer.toString();
     int boundary;
-    while ((boundary = _buffer.indexOf('}{')) != -1) {
-      final jsonString = _buffer.substring(0, boundary + 1);
+    while ((boundary = s.indexOf('}{')) != -1) {
+      final jsonString = s.substring(0, boundary + 1);
       if (_tryApply(state, jsonString)) {
         didUpdate = true;
       }
-      _buffer = _buffer.substring(boundary + 1);
+      s = s.substring(boundary + 1);
     }
 
     // try remaining buffer if it looks complete
-    if (_buffer.isNotEmpty && _buffer.trimRight().endsWith('}')) {
-      if (_tryApply(state, _buffer)) {
+    if (s.isNotEmpty && s.trimRight().endsWith('}')) {
+      if (_tryApply(state, s)) {
         didUpdate = true;
       }
-      _buffer = '';
+      s = '';
     }
+
+    _buffer.clear();
+    if (s.isNotEmpty) _buffer.write(s);
 
     return didUpdate;
   }
@@ -88,6 +101,6 @@ class CerealAdapter implements TelemetryAdapter {
 
   @override
   void reset() {
-    _buffer = '';
+    _buffer.clear();
   }
 }

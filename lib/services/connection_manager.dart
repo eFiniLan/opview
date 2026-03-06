@@ -52,6 +52,7 @@ class ConnectionManager {
   StreamSubscription? _dataSub;
   StreamSubscription? _stateSub;
   Timer? _retryTimer;
+  final _connectivity = Connectivity();
   StreamSubscription? _connectivitySub;
   bool _hadWifi = false;
   bool _connecting = false;
@@ -71,7 +72,7 @@ class ConnectionManager {
   /// monitor WiFi state — restart discovery when WiFi connects
   void _listenConnectivity() {
     _connectivitySub?.cancel();
-    _connectivitySub = Connectivity().onConnectivityChanged.listen((result) {
+    _connectivitySub = _connectivity.onConnectivityChanged.listen((result) {
       final hasWifi = result.contains(ConnectivityResult.wifi);
       if (hasWifi && !_hadWifi) {
         debugPrint('[opview] WiFi connected, restarting discovery');
