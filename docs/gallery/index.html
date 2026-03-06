@@ -11,40 +11,104 @@
   h1 { font-size: 1.5rem; font-weight: 500; margin-bottom: 0.5rem; }
   .subtitle { color: var(--muted); margin-bottom: 2rem; font-size: 0.9rem; }
 
-  /* filters */
-  .filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2rem; }
-  .filters button {
+  /* scenario switcher */
+  .switcher { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 2.5rem; }
+  .switcher button {
     background: #1a1a1a; border: 1px solid #333; color: var(--fg);
-    padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+    padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+    transition: background 0.15s, border-color 0.15s;
   }
-  .filters button.active { background: var(--accent); border-color: var(--accent); }
+  .switcher button:hover { background: #222; border-color: #555; }
+  .switcher button.active { background: var(--accent); border-color: var(--accent); }
 
-  /* grid */
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 2rem; }
+  /* grid — one card per device */
+  .grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem;
+  }
 
-  /* device frame */
-  .device { background: #111; border-radius: 12px; overflow: hidden; }
-  .device-header { padding: 0.6rem 1rem; display: flex; justify-content: space-between; align-items: center; }
-  .device-name { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
-  .device-res { font-size: 0.75rem; color: var(--muted); }
+  /* card */
+  .card { text-align: center; }
+  .card-label { margin-top: 0.6rem; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .card-res { font-size: 0.7rem; color: #444; }
 
-  /* phone mockup */
-  .frame-phone .device-screen { padding: 8px 20px; background: #000; }
-  .frame-phone .device-screen img { border-radius: 8px; }
+  /* phone — landscape, rounded corners, side buttons */
+  .mock-phone {
+    position: relative; display: inline-block;
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    border-radius: 24px; padding: 12px 16px;
+    border: 2px solid #333;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .mock-phone::before {
+    content: ''; position: absolute;
+    left: -2px; top: 50%; transform: translateY(-50%);
+    width: 6px; height: 40px; background: #1a1a1a;
+    border-radius: 0 4px 4px 0; border: 2px solid #333; border-left: none;
+  }
+  .mock-phone::after {
+    content: ''; position: absolute;
+    right: -5px; top: 30%; width: 3px; height: 24px;
+    background: #333; border-radius: 2px;
+    box-shadow: 0 36px 0 #333;
+  }
 
-  /* tablet mockup */
-  .frame-tablet .device-screen { padding: 10px 16px; background: #000; }
-  .frame-tablet .device-screen img { border-radius: 6px; }
+  /* tablet — landscape, thin bezels, front camera */
+  .mock-tablet {
+    position: relative; display: inline-block;
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    border-radius: 18px; padding: 14px 18px;
+    border: 2px solid #333;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+  .mock-tablet::before {
+    content: ''; position: absolute;
+    top: 4px; left: 50%; transform: translateX(-50%);
+    width: 8px; height: 8px; background: #222;
+    border-radius: 50%; border: 1px solid #444;
+  }
 
-  /* headunit mockup */
-  .frame-headunit .device-screen { padding: 6px 8px; background: #000; }
-  .frame-headunit .device-screen img { border-radius: 4px; }
+  /* headunit — wide, industrial, flat */
+  .mock-headunit {
+    position: relative; display: inline-block;
+    background: linear-gradient(180deg, #222, #181818);
+    border-radius: 8px; padding: 10px 12px 14px;
+    border: 2px solid #2a2a2a;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+  .mock-headunit::after {
+    content: ''; position: absolute;
+    bottom: 3px; left: 50%; transform: translateX(-50%);
+    width: 40px; height: 2px; background: #333; border-radius: 1px;
+  }
 
-  /* full hd — no frame, just screen */
-  .frame-full_hd .device-screen { padding: 4px; background: #000; }
+  /* full HD — monitor with stand */
+  .mock-full_hd {
+    position: relative; display: inline-block;
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    border-radius: 10px; padding: 10px 10px 28px;
+    border: 2px solid #333;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    margin-bottom: 16px;
+  }
+  .mock-full_hd::after {
+    content: ''; position: absolute;
+    bottom: -16px; left: 50%; transform: translateX(-50%);
+    width: 60px; height: 16px;
+    background: linear-gradient(180deg, #2a2a2a, #1a1a1a);
+    border-radius: 0 0 6px 6px; border: 2px solid #333; border-top: none;
+  }
 
-  .device-screen img { width: 100%; height: auto; display: block; }
-  .scenario-label { padding: 0.4rem 1rem 0.6rem; font-size: 0.75rem; color: var(--muted); }
+  /* shared screen style */
+  .screen { overflow: hidden; background: #000; }
+  .mock-phone .screen { border-radius: 12px; }
+  .mock-tablet .screen { border-radius: 8px; }
+  .mock-headunit .screen { border-radius: 4px; }
+  .mock-full_hd .screen { border-radius: 4px; }
+  .screen img { display: block; width: 100%; height: auto; }
+  .mock-phone, .mock-tablet, .mock-headunit, .mock-full_hd { max-width: 100%; }
 </style>
 </head>
 <body>
@@ -52,95 +116,70 @@
 <h1>opview UI Gallery</h1>
 <p class="subtitle">Auto-generated screenshots from golden tests</p>
 
-<div class="filters">
-  <span style="color:var(--muted);line-height:2;margin-right:0.5rem;">Device:</span>
-  <button class="active" data-filter-device="all">All</button>
-  <button data-filter-device="phone">Phone</button>
-  <button data-filter-device="tablet">Tablet</button>
-  <button data-filter-device="headunit">Headunit</button>
-  <button data-filter-device="full_hd">Full HD</button>
-</div>
-<div class="filters">
-  <span style="color:var(--muted);line-height:2;margin-right:0.5rem;">Scenario:</span>
-  <button class="active" data-filter-scenario="all">All</button>
-  <button data-filter-scenario="engaged">Engaged</button>
-  <button data-filter-scenario="disengaged">Disengaged</button>
-  <button data-filter-scenario="alert_small">Alert Small</button>
-  <button data-filter-scenario="alert_prompt">Alert Prompt</button>
-  <button data-filter-scenario="alert_soft_disable">Soft Disable</button>
-  <button data-filter-scenario="alert_critical">Alert Critical</button>
-  <button data-filter-scenario="alert_calibrating">Calibrating</button>
-</div>
-
+<div class="switcher" id="switcher"></div>
 <div class="grid" id="grid"></div>
 
 <script>
 const devices = [
-  { id: 'phone', name: 'Phone', res: '844 x 390' },
-  { id: 'tablet', name: 'Tablet', res: '1024 x 768' },
-  { id: 'headunit', name: 'Headunit', res: '1280 x 480' },
-  { id: 'full_hd', name: 'Full HD', res: '1920 x 1080' },
+  { id: 'phone', name: 'Phone', res: '844 x 390', mock: 'mock-phone' },
+  { id: 'tablet', name: 'Tablet', res: '1024 x 768', mock: 'mock-tablet' },
+  { id: 'headunit', name: 'Headunit', res: '1280 x 480', mock: 'mock-headunit' },
+  { id: 'full_hd', name: 'Full HD', res: '1920 x 1080', mock: 'mock-full_hd' },
 ];
 const scenarios = [
-  'engaged', 'disengaged', 'alert_calibrating', 'alert_small',
-  'alert_prompt', 'alert_soft_disable', 'alert_critical',
+  { id: 'disengaged', label: 'Disengaged' },
+  { id: 'engaged', label: 'Engaged' },
+  { id: 'alert_calibrating', label: 'Calibrating' },
+  { id: 'alert_small', label: 'Alert Small' },
+  { id: 'alert_prompt', label: 'Alert Prompt' },
+  { id: 'alert_soft_disable', label: 'Soft Disable' },
+  { id: 'alert_critical', label: 'Alert Critical' },
 ];
 
-const grid = document.getElementById('grid');
-
-// detect if running on GitHub Pages (goldens/) or locally (../../test/golden/goldens/)
 const isPages = location.hostname.includes('github.io') || location.pathname.includes('_site');
 const imgBase = isPages ? 'goldens' : '../../test/golden/goldens';
 
-for (const device of devices) {
-  for (const scenario of scenarios) {
-    const card = document.createElement('div');
-    card.className = `device frame-${device.id}`;
-    card.dataset.device = device.id;
-    card.dataset.scenario = scenario;
-    card.innerHTML = `
-      <div class="device-header">
-        <span class="device-name">${device.name}</span>
-        <span class="device-res">${device.res}</span>
-      </div>
-      <div class="device-screen">
-        <img src="${imgBase}/${device.id}_${scenario}.png"
-             alt="${device.name} - ${scenario}"
-             loading="lazy">
-      </div>
-      <div class="scenario-label">${scenario.replace(/_/g, ' ')}</div>
-    `;
-    grid.appendChild(card);
-  }
-}
-
-// filtering
-let activeDevice = 'all', activeScenario = 'all';
-
-function applyFilters() {
-  for (const card of grid.children) {
-    const dMatch = activeDevice === 'all' || card.dataset.device === activeDevice;
-    const sMatch = activeScenario === 'all' || card.dataset.scenario === activeScenario;
-    card.style.display = (dMatch && sMatch) ? '' : 'none';
-  }
-}
-
-document.querySelectorAll('[data-filter-device]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('[data-filter-device]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeDevice = btn.dataset.filterDevice;
-    applyFilters();
-  });
+// build scenario switcher
+const switcher = document.getElementById('switcher');
+scenarios.forEach((s, i) => {
+  const btn = document.createElement('button');
+  btn.textContent = s.label;
+  btn.dataset.scenario = s.id;
+  if (i === 0) btn.classList.add('active');
+  switcher.appendChild(btn);
 });
 
-document.querySelectorAll('[data-filter-scenario]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('[data-filter-scenario]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeScenario = btn.dataset.filterScenario;
-    applyFilters();
-  });
+// build device cards
+const grid = document.getElementById('grid');
+for (const device of devices) {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="${device.mock}">
+      <div class="screen">
+        <img id="img-${device.id}"
+             src="${imgBase}/${device.id}_${scenarios[0].id}.png"
+             alt="${device.name}"
+             loading="lazy">
+      </div>
+    </div>
+    <div class="card-label">${device.name}</div>
+    <div class="card-res">${device.res}</div>
+  `;
+  grid.appendChild(card);
+}
+
+// scenario switching
+switcher.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  switcher.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const scenario = btn.dataset.scenario;
+  for (const device of devices) {
+    document.getElementById(`img-${device.id}`).src =
+      `${imgBase}/${device.id}_${scenario}.png`;
+  }
 });
 </script>
 </body>
