@@ -72,64 +72,67 @@ class _AugmentedRoadViewState extends State<AugmentedRoadView> {
           screenW - 2 * borderSize, screenH - 2 * borderSize,
         );
 
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            // layer 0 + 1a: video + model overlay
-            _videoLayer(),
-            ClipRect(
-              clipper: _ContentClipper(contentRect),
-              child: CustomPaint(
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // layer 0 + 1a: video + model overlay
+              _videoLayer(),
+              ClipRect(
+                clipper: _ContentClipper(contentRect),
+                child: CustomPaint(
+                  size: Size(screenW, screenH),
+                  painter: ModelRendererPainter(
+                    state: widget.uiState,
+                    carSpaceTransform: transform,
+                    contentRect: contentRect,
+                  ),
+                ),
+              ),
+
+              // layer 1b: HUD + alerts — always visible
+              // RepaintBoundary isolates widget rebuilds from the video/model layer
+              Padding(
+                padding: EdgeInsets.all(borderSize),
+                child: RepaintBoundary(
+                  child: ClipRect(
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        HudRenderer(uiState: widget.uiState, scale: scale),
+                        AlertRenderer(uiState: widget.uiState, scale: scale),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // layer 2: engagement border — always visible
+              CustomPaint(
                 size: Size(screenW, screenH),
-                painter: ModelRendererPainter(
-                  state: widget.uiState,
-                  carSpaceTransform: transform,
-                  contentRect: contentRect,
+                painter: _EngagementBorderPainter(
+                  status: widget.uiState.status,
+                  borderSize: borderSize,
                 ),
               ),
-            ),
 
-            // layer 1b: HUD + alerts — always visible
-            // RepaintBoundary isolates widget rebuilds from the video/model layer
-            Padding(
-              padding: EdgeInsets.all(borderSize),
-              child: RepaintBoundary(
-                child: ClipRect(
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      HudRenderer(uiState: widget.uiState, scale: scale),
-                      AlertRenderer(uiState: widget.uiState, scale: scale),
-                    ],
+              // layer 3: "Connecting..." overlay when disconnected
+              if (!widget.uiState.isConnected)
+                Container(
+                  color: const Color(0xCC000000),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Connecting…',
+                    style: TextStyle(
+                      color: const Color(0x99FFFFFF),
+                      fontSize: 40 * scale,
+                      fontWeight: FontWeight.w300,
+                    ),
                   ),
                 ),
-              ),
-            ),
-
-            // layer 2: engagement border — always visible
-            CustomPaint(
-              size: Size(screenW, screenH),
-              painter: _EngagementBorderPainter(
-                status: widget.uiState.status,
-                borderSize: borderSize,
-              ),
-            ),
-
-            // layer 3: "Connecting..." overlay when disconnected
-            if (!widget.uiState.isConnected)
-              Container(
-                color: const Color(0xCC000000),
-                alignment: Alignment.center,
-                child: Text(
-                  'Connecting…',
-                  style: TextStyle(
-                    color: const Color(0x99FFFFFF),
-                    fontSize: 40 * scale,
-                    fontWeight: FontWeight.w300,
-                  ),
-                ),
-              ),
-          ],
+            ],
+          ),
         );
       }),
     );
