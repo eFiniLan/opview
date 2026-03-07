@@ -43,7 +43,7 @@ jobs:
 
       - run: flutter build apk --release
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: opview-apk
           path: build/app/outputs/flutter-apk/app-release.apk
