@@ -9,6 +9,12 @@
 複製 [openpilot](https://github.com/commaai/openpilot) 原廠行車介面，以 Flutter 建構，支援 iOS 與 Android。
 不需要 3D 函式庫，所有投影皆為純 Dart 3x3 矩陣運算。
 
+<p align="center">
+  <a href="https://youtube.com/shorts/r0O_RzXd_0k">
+    <img src="https://img.youtube.com/vi/r0O_RzXd_0k/maxresdefault.jpg" width="600" alt="opview 示範">
+  </a>
+</p>
+
 ## 使用方式
 
 1. 將手機連接到與 comma 裝置**相同的 WiFi 網路**

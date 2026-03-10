@@ -9,6 +9,12 @@
 A clone of [openpilot](https://github.com/commaai/openpilot)'s stock onroad UI, built in Flutter for iOS and Android.
 No 3D library needed. All projection is pure 3x3 matrix math in Dart.
 
+<p align="center">
+  <a href="https://youtube.com/shorts/r0O_RzXd_0k">
+    <img src="https://img.youtube.com/vi/r0O_RzXd_0k/maxresdefault.jpg" width="600" alt="opview demo">
+  </a>
+</p>
+
 ## Usage
 
 1. Connect your phone to the **same WiFi network** as your comma device
