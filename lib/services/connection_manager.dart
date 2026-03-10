@@ -9,6 +9,7 @@
 //   5. reconnect on failure
 
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:opview/selfdrive/ui/ui_state.dart';
 import 'package:opview/services/discovery.dart';
@@ -19,12 +20,16 @@ import 'package:opview/services/impl/webrtc_transport.dart';
 import 'package:opview/services/impl/cereal_adapter.dart';
 import 'package:opview/services/wake_lock_service.dart' as wake_lock;
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // retry config
 const _retryDelay = Duration(seconds: 2);
 
 // delay before re-discovery after all retries exhausted
 const _rediscoverDelay = Duration(seconds: 15);
+
+// SharedPreferences key for cached host
+const _cachedHostKey = 'last_known_host';
 
 // camera switching thresholds (augmented_road_view.py:29-30)
 const wideCamMaxSpeed = 10.0;  // m/s — switch to wide below this
@@ -64,9 +69,22 @@ class ConnectionManager {
   String _streamType = 'road';
 
   /// start discovery + auto-connect + network monitoring
-  void start() {
-    _startDiscovery();
+  /// tries cached host first for fast reconnect, mDNS in parallel as fallback
+  void start() async {
     _listenConnectivity();
+
+    final cachedHost = await _loadCachedHost();
+    if (cachedHost != null && await _isOnSameSubnet(cachedHost)) {
+      debugPrint('[opview] trying cached host $cachedHost');
+      _host = cachedHost;
+      _startDiscovery(); // mDNS in parallel as fallback
+      _connect();
+    } else {
+      if (cachedHost != null) {
+        debugPrint('[opview] cached host $cachedHost on different subnet, skipping');
+      }
+      _startDiscovery();
+    }
   }
 
   /// monitor WiFi state — restart discovery when WiFi connects
@@ -92,13 +110,13 @@ class ConnectionManager {
     await _discovery.start();
   }
 
-  /// first device found → connect
+  /// first device found → connect (or update host if cached attempt is still in-flight)
   void _onDeviceFound(DiscoveredDevice device) {
-    if (_host != null) return; // already connecting to one
+    if (_uiState.isConnected) return; // already connected via cached host
     _host = device.host;
     debugPrint('[opview] discovered ${device.displayName} at ${device.host}');
-    _discovery.stop(); // stop discovery, we have our target
-    _connect();
+    _discovery.stop();
+    if (!_connecting) _connect();
   }
 
   Future<void> _connect() async {
@@ -119,6 +137,8 @@ class ConnectionManager {
       _listenData();
       _listenState();
       _setConnected(true);
+      _discovery.stop(); // connected — stop any parallel mDNS
+      _saveCachedHost(_host!);
       debugPrint('[opview] connected');
     } catch (e) {
       if (epoch != _connectEpoch) return; // superseded, don't reconnect
@@ -242,14 +262,52 @@ class ConnectionManager {
   }
 
   /// tear down current connection and re-discover
-  /// always re-discovers to handle IP changes (e.g. DHCP renewal while paused)
+  /// tries cached host first, mDNS in parallel (handles IP changes)
   void reconnect() {
     _paused = false;
     debugPrint('[opview] reconnect requested');
     _teardown();
     _retryCount = 0;
     _host = null;
-    _startDiscovery();
+    start();
+  }
+
+  Future<String?> _loadCachedHost() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_cachedHostKey);
+  }
+
+  void _saveCachedHost(String host) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_cachedHostKey, host);
+  }
+
+  /// check if a host IP is on the same /16 subnet as any local interface
+  /// catches obvious mismatches (e.g. 10.x.x.x vs 192.168.x.x)
+  Future<bool> _isOnSameSubnet(String host) async {
+    try {
+      final hostAddr = InternetAddress.tryParse(host);
+      if (hostAddr == null) return true; // hostname, not IP — let it try
+
+      final hostBytes = hostAddr.rawAddress;
+      if (hostBytes.length != 4) return true; // IPv6 — skip check
+
+      final interfaces = await NetworkInterface.list();
+      for (final iface in interfaces) {
+        for (final addr in iface.addresses) {
+          if (addr.type != InternetAddressType.IPv4) continue;
+          final localBytes = addr.rawAddress;
+          // /16 match: same first two octets
+          if (localBytes[0] == hostBytes[0] && localBytes[1] == hostBytes[1]) {
+            return true;
+          }
+        }
+      }
+      return false;
+    } catch (e) {
+      debugPrint('[opview] subnet check failed: $e');
+      return true; // fail open — let it try
+    }
   }
 
   Future<void> dispose() async {
