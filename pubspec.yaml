@@ -13,7 +13,7 @@ dependencies:
   bonsoir: ^6.0.2
   http: ^1.2.0
   connectivity_plus: ^7.0.0
-  shared_preferences: ^2.3.0
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:
