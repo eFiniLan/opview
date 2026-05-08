@@ -21,50 +21,50 @@ packages:
     dependency: "direct main"
     description:
       name: bonsoir
-      sha256: "42f2c1eb55e833bcb541dfcb759851da0a703106646a0cf15a16c6de21f4a5a4"
+      sha256: "1b112a966302a739d253c8dbc7ea4c1cb3eca6d8110dc59e36d76f7cf0b6edf2"
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.2"
+    version: "6.1.0"
   bonsoir_android:
     dependency: transitive
     description:
       name: bonsoir_android
-      sha256: e19728f94a0d9813abf9e2edf644fede008e58ef539865a1be86ac5d8994154e
+      sha256: bfa3ab7e2f65473cb369bce639dbdbdc75064848c01ac11b3c2bc3e16031ff3a
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.1"
+    version: "6.0.2"
   bonsoir_darwin:
     dependency: transitive
     description:
       name: bonsoir_darwin
-      sha256: e242a03a019fd474be657715826cfc13e43d02c88e46ec5611a20b9d4f72854d
+      sha256: d62fd62ed433aa09ec99f71f95dae53ffa0adf788c9051ff3d6b903463045d3c
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.1"
+    version: "6.1.0"
   bonsoir_linux:
     dependency: transitive
     description:
       name: bonsoir_linux
-      sha256: "9c326c572c241c6a38ab7a8a5dba27c82917ec12504f84308ce3b5706619e8d3"
+      sha256: a49d5f328a197b27a3901b833f92c93366f2cd7085dcb495fa11ee6d9f2509a9
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.2"
+    version: "6.0.3"
   bonsoir_platform_interface:
     dependency: transitive
     description:
       name: bonsoir_platform_interface
-      sha256: "3fa0c46b30eb2a2f48be6fa53591a5c0425bf00520be761b61763e58b51814ff"
+      sha256: ba1cc30daaa172dfc76f88e4fee8d090674179439201997ba2b3bd9e1cca84c0
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.1"
+    version: "6.1.0"
   bonsoir_windows:
     dependency: transitive
     description:
       name: bonsoir_windows
-      sha256: "34c54802baaa2f00e3c4ab7ea46888f2a829876753778e2f40e3f273c3382d34"
+      sha256: "01aba2516b776eb1deb68845124dc0a41095da108276d4b307bf19c4c3e2d9b1"
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.1"
+    version: "6.0.3"
   boolean_selector:
     dependency: transitive
     description:
@@ -292,10 +292,10 @@ packages:
     dependency: transitive
     description:
       name: matcher
-      sha256: "12956d0ad8390bbcc63ca2e1469c0619946ccb52809807067a7020d57e647aa6"
+      sha256: dc0b7dc7651697ea4ff3e69ef44b0407ea32c487a39fff6a4004fa585e901861
       url: "https://pub.dev"
     source: hosted
-    version: "0.12.18"
+    version: "0.12.19"
   material_color_utilities:
     dependency: transitive
     description:
@@ -537,10 +537,10 @@ packages:
     dependency: transitive
     description:
       name: test_api
-      sha256: "93167629bfc610f71560ab9312acdda4959de4df6fac7492c89ff0d3886f6636"
+      sha256: "8161c84903fd860b26bfdefb7963b3f0b68fee7adea0f59ef805ecca346f0c7a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.9"
+    version: "0.7.10"
   typed_data:
     dependency: transitive
     description:
