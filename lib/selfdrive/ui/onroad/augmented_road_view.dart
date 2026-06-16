@@ -117,18 +117,35 @@ class _AugmentedRoadViewState extends State<AugmentedRoadView> {
                 ),
               ),
 
-              // layer 3: "Connecting..." overlay when disconnected
+              // layer 3: connecting overlay with rolling status log
               if (!widget.uiState.isConnected)
                 Container(
                   color: const Color(0xCC000000),
                   alignment: Alignment.center,
-                  child: Text(
-                    'Connecting…',
-                    style: TextStyle(
-                      color: const Color(0x99FFFFFF),
-                      fontSize: 40 * scale,
-                      fontWeight: FontWeight.w300,
-                    ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Connecting…',
+                        style: TextStyle(
+                          color: const Color(0x99FFFFFF),
+                          fontSize: 40 * scale,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                      SizedBox(height: 20 * scale),
+                      ...widget.uiState.connectionLog.map((line) => Text(
+                        line,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: const Color(0x66FFFFFF),
+                          fontSize: 16 * scale,
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.w300,
+                        ),
+                      )),
+                    ],
                   ),
                 ),
             ],

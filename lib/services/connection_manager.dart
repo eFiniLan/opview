@@ -62,11 +62,23 @@ class ConnectionManager {
   bool _hadWifi = false;
   bool _connecting = false;
   bool _paused = false;
+  bool _discovering = false;   // guard against duplicate _startDiscovery() (start() + connectivity race)
   bool _reconnecting = false;  // guard against re-entrant _scheduleReconnect
   int _connectEpoch = 0;       // invalidate stale in-flight connects
   int _retryCount = 0;
   static const _maxRetries = 3;
   String _streamType = 'road';
+
+  /// update status line shown on the connecting overlay
+  void _setStatus(String msg) {
+    final now = DateTime.now();
+    final ts = '${now.hour.toString().padLeft(2, '0')}:'
+        '${now.minute.toString().padLeft(2, '0')}:'
+        '${now.second.toString().padLeft(2, '0')}';
+    debugPrint('[opview] $msg');
+    _uiState.addConnectionStatus('[$ts] $msg');
+    if (!_uiState.isConnected) _uiState.notifyNow();
+  }
 
   /// start discovery + auto-connect + network monitoring
   /// tries cached host first for fast reconnect, mDNS in parallel as fallback
@@ -75,14 +87,15 @@ class ConnectionManager {
 
     final cachedHost = await _loadCachedHost();
     if (cachedHost != null && await _isOnSameSubnet(cachedHost)) {
-      debugPrint('[opview] trying cached host $cachedHost');
+      _setStatus('trying cached host $cachedHost');
       _host = cachedHost;
       _startDiscovery(); // mDNS in parallel as fallback
       _connect();
     } else {
       if (cachedHost != null) {
-        debugPrint('[opview] cached host $cachedHost on different subnet, skipping');
+        _setStatus('cached host $cachedHost on different subnet, skipping');
       }
+      _setStatus('searching for comma device…');
       _startDiscovery();
     }
   }
@@ -93,7 +106,7 @@ class ConnectionManager {
     _connectivitySub = _connectivity.onConnectivityChanged.listen((result) {
       final hasWifi = result.contains(ConnectivityResult.wifi);
       if (hasWifi && !_hadWifi) {
-        debugPrint('[opview] WiFi connected, restarting discovery');
+        _setStatus('WiFi connected, searching…');
         _hadWifi = true;
         if (_host == null && !_paused) {
           _startDiscovery();
@@ -105,17 +118,25 @@ class ConnectionManager {
   }
 
   Future<void> _startDiscovery() async {
+    if (_discovering) return; // already searching — avoid duplicate mDNS sessions
+    _discovering = true;
     _deviceSub?.cancel();
     _deviceSub = _discovery.devices.listen(_onDeviceFound);
     await _discovery.start();
+  }
+
+  void _stopDiscovery() {
+    if (!_discovering) return;
+    _discovering = false;
+    _discovery.stop();
   }
 
   /// first device found → connect (or update host if cached attempt is still in-flight)
   void _onDeviceFound(DiscoveredDevice device) {
     if (_uiState.isConnected) return; // already connected via cached host
     _host = device.host;
-    debugPrint('[opview] discovered ${device.displayName} at ${device.host}');
-    _discovery.stop();
+    _setStatus('found ${device.displayName} at ${device.host}');
+    _stopDiscovery();
     if (!_connecting) _connect();
   }
 
@@ -130,19 +151,19 @@ class ConnectionManager {
     _stateSub = null;
 
     try {
-      debugPrint('[opview] connecting to $_host (camera: $_streamType)');
+      _setStatus('connecting to $_host (camera: $_streamType)');
       await _transport.connect(_host!, camera: _streamType);
       if (epoch != _connectEpoch) return; // superseded by newer connect
       _retryCount = 0;
       _listenData();
       _listenState();
       _setConnected(true);
-      _discovery.stop(); // connected — stop any parallel mDNS
+      _stopDiscovery(); // connected — stop any parallel mDNS
       _saveCachedHost(_host!);
-      debugPrint('[opview] connected');
+      _setStatus('connected');
     } catch (e) {
       if (epoch != _connectEpoch) return; // superseded, don't reconnect
-      debugPrint('[opview] connection failed: $e');
+      _setStatus('connection failed: $e');
       _scheduleReconnect();
     } finally {
       if (epoch == _connectEpoch) _connecting = false;
@@ -178,7 +199,7 @@ class ConnectionManager {
     if (target == _streamType) return;
     _streamType = target;
     _uiState.streamType = target;
-    debugPrint('[opview] camera switch → $_streamType');
+    _setStatus('camera switch → $_streamType');
     // immediate reconnect — no retry counting
     _teardown();
     _retryCount = 0;
@@ -190,7 +211,7 @@ class ConnectionManager {
     _stateSub?.cancel();
     _stateSub = _transport.stateStream.listen((state) {
       if (state == TransportState.failed) {
-        debugPrint('[opview] connection lost');
+        _setStatus('connection lost');
         _scheduleReconnect();
       }
     });
@@ -235,7 +256,7 @@ class ConnectionManager {
 
     if (_retryCount > _maxRetries) {
       // give up on this host, wait then re-discover
-      debugPrint('[opview] $_maxRetries retries failed, waiting ${_rediscoverDelay.inSeconds}s before re-discovery');
+      _setStatus('$_maxRetries retries failed, re-discovering in ${_rediscoverDelay.inSeconds}s');
       _host = null;
       _retryCount = 0;
       _retryTimer = Timer(_rediscoverDelay, () {
@@ -246,7 +267,7 @@ class ConnectionManager {
       return;
     }
 
-    debugPrint('[opview] retry $_retryCount/$_maxRetries in ${_retryDelay.inSeconds}s');
+    _setStatus('retry $_retryCount/$_maxRetries in ${_retryDelay.inSeconds}s');
     _retryTimer = Timer(_retryDelay, () {
       _reconnecting = false;
       _connect();
@@ -257,7 +278,7 @@ class ConnectionManager {
   void pause() {
     if (_paused) return;
     _paused = true;
-    debugPrint('[opview] paused');
+    _setStatus('paused');
     _teardown();
   }
 
@@ -265,7 +286,7 @@ class ConnectionManager {
   /// tries cached host first, mDNS in parallel (handles IP changes)
   void reconnect() {
     _paused = false;
-    debugPrint('[opview] reconnect requested');
+    _setStatus('reconnecting…');
     _teardown();
     _retryCount = 0;
     _host = null;
@@ -282,8 +303,8 @@ class ConnectionManager {
     await prefs.setString(_cachedHostKey, host);
   }
 
-  /// check if a host IP is on the same /16 subnet as any local interface
-  /// catches obvious mismatches (e.g. 10.x.x.x vs 192.168.x.x)
+  /// check if a host IP is on the same /24 subnet as any local interface
+  /// catches network switches (e.g. home wifi → hotspot, even within 192.168.x.x)
   Future<bool> _isOnSameSubnet(String host) async {
     try {
       final hostAddr = InternetAddress.tryParse(host);
@@ -297,8 +318,10 @@ class ConnectionManager {
         for (final addr in iface.addresses) {
           if (addr.type != InternetAddressType.IPv4) continue;
           final localBytes = addr.rawAddress;
-          // /16 match: same first two octets
-          if (localBytes[0] == hostBytes[0] && localBytes[1] == hostBytes[1]) {
+          // /24 match: same first three octets
+          if (localBytes[0] == hostBytes[0] &&
+              localBytes[1] == hostBytes[1] &&
+              localBytes[2] == hostBytes[2]) {
             return true;
           }
         }

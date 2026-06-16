@@ -87,6 +87,15 @@ class UIState extends ChangeNotifier {
   // connection state — drives "Connecting..." overlay + screen wake lock
   bool isConnected = false;
 
+  // rolling status log shown on the connecting overlay (newest last)
+  final List<String> connectionLog = [];
+  static const _maxLogLines = 8;
+
+  void addConnectionStatus(String msg) {
+    connectionLog.add(msg);
+    if (connectionLog.length > _maxLogLines) connectionLog.removeAt(0);
+  }
+
   /// monotonic version counter — incremented on each notify.
   /// used by painters to detect state changes in shouldRepaint.
   int version = 0;
